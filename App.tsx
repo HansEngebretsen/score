@@ -48,17 +48,17 @@ const App: React.FC = () => {
     const handleViewportChange = () => {
       if (vv) {
         document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
-        // If Safari has scrolled the layout viewport (e.g. keyboard open), try to keep it at 0,0
-        if (window.scrollY !== 0) {
+        // If Safari has scrolled the layout viewport despite position: fixed, reset it.
+        if (window.scrollY !== 0 || window.scrollX !== 0) {
           window.scrollTo(0, 0);
         }
       }
     };
 
     const handleFocusOut = (e: FocusEvent) => {
+      // Force the layout viewport back to the top when keyboard dismisses.
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
-        // Force the layout viewport back to the top when keyboard starts closing.
-        // A slightly longer timeout (100ms) ensures Safari has processed the keyboard dismissal.
+        // Use a 100ms timeout as per user research to ensure keyboard is fully gone
         setTimeout(() => {
           window.scrollTo(0, 0);
           document.body.scrollTop = 0;
@@ -71,6 +71,7 @@ const App: React.FC = () => {
     vv?.addEventListener('scroll', handleViewportChange);
     document.addEventListener('focusout', handleFocusOut);
 
+    // Initial sync
     handleViewportChange();
 
     return () => {
