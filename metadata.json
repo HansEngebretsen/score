@@ -1,0 +1,5 @@
+{
+  "name": "Flip 7 Tracker",
+  "description": "A whimsical and magical score keeper for the Flip 7 card game, featuring a dynamic scoreboard, player stats, and persistent local storage.",
+  "requestFramePermissions": []
+}
