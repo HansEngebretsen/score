@@ -37,7 +37,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          # We removed 'cache: npm' because it requires a package-lock.json to be committed to the repo.
+          # If you have a package-lock.json, you can add it back later.
 
       - name: Install dependencies
         run: npm install
@@ -51,7 +52,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # IMPORTANT: We must upload the 'dist' folder created by Vite, not the root '.'
+          # IMPORTANT: We must upload the 'dist' folder created by Vite
           path: './dist'
 
       - name: Deploy to GitHub Pages
