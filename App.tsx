@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, Game, Player, View, LeaderboardMetric, Theme } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AppState, Game, Player, LeaderboardMetric } from './types';
 import { DB_KEY, getRandomEmoji } from './constants';
 import Dashboard from './components/Dashboard';
 import GameView from './components/GameView';
@@ -12,13 +12,8 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return {
-          reorderEnabled: true, // Default if not present
-          ...parsed
-        };
-      } catch (e) {
-        console.error("Error loading state", e);
-      }
+        return { reorderEnabled: true, ...parsed };
+      } catch (e) { console.error("Error loading state", e); }
     }
     return {
       view: 'dashboard',
@@ -31,23 +26,13 @@ const App: React.FC = () => {
   });
 
   const [deleteContext, setDeleteContext] = useState<{ type: 'game' | 'player' | null; id: string | number | null; name: string }>({
-    type: null,
-    id: null,
-    name: ''
+    type: null, id: null, name: ''
   });
 
-  // Sync state to local storage
-  useEffect(() => {
-    localStorage.setItem(DB_KEY, JSON.stringify(state));
-  }, [state]);
+  useEffect(() => { localStorage.setItem(DB_KEY, JSON.stringify(state)); }, [state]);
 
-  // Handle theme
   useEffect(() => {
-    if (state.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', state.theme === 'dark');
   }, [state.theme]);
 
   const toggleTheme = useCallback(() => {
@@ -63,7 +48,6 @@ const App: React.FC = () => {
     let newPlayers: Player[] = [];
 
     if (lastGame) {
-      // Inherit players from the most recent game
       newPlayers = lastGame.players.map((p, idx) => ({
         id: `p${Date.now()}${idx}`,
         name: p.name,
@@ -71,7 +55,6 @@ const App: React.FC = () => {
         scores: [null]
       }));
     } else {
-      // Fallback default setup
       newPlayers = [
         { id: `p${Date.now()}1`, name: "P1", icon: getRandomEmoji(), scores: [null] },
         { id: `p${Date.now()}2`, name: "P2", icon: getRandomEmoji(), scores: [null] },
@@ -129,10 +112,7 @@ const App: React.FC = () => {
         if (activeGame && activeGame.players.length > 1) {
           const updatedPlayers = activeGame.players.filter(p => p.id !== deleteContext.id);
           const updatedGame = { ...activeGame, players: updatedPlayers };
-          return {
-            ...prev,
-            games: prev.games.map(g => g.id === updatedGame.id ? updatedGame : g)
-          };
+          return { ...prev, games: prev.games.map(g => g.id === updatedGame.id ? updatedGame : g) };
         }
         return prev;
       });
@@ -144,7 +124,6 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col selection:bg-pink-500/30 overflow-hidden relative">
-      {/* Background Decorations */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
         <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>
@@ -153,22 +132,11 @@ const App: React.FC = () => {
 
       {state.view === 'dashboard' ? (
         <Dashboard 
-          games={state.games}
-          metric={state.leaderboardMetric}
-          setMetric={setMetric}
-          onNewGame={createNewGame}
-          onLoadGame={loadGame}
-          onPromptDelete={promptDelete}
-          theme={state.theme}
-          onToggleTheme={toggleTheme}
+          games={state.games} metric={state.leaderboardMetric} setMetric={setMetric} onNewGame={createNewGame} 
+          onLoadGame={loadGame} onPromptDelete={promptDelete} theme={state.theme} onToggleTheme={toggleTheme} 
         />
       ) : activeGame ? (
-        <GameView 
-          game={activeGame}
-          onGoBack={goToDashboard}
-          onUpdate={updateGameState}
-          onPromptDelete={promptDelete}
-        />
+        <GameView game={activeGame} onGoBack={goToDashboard} onUpdate={updateGameState} onPromptDelete={promptDelete} />
       ) : (
         <div className="flex-1 flex items-center justify-center">
             <button onClick={goToDashboard} className="p-4 bg-magical-accent text-white rounded-xl">Back to Dashboard</button>
@@ -176,12 +144,7 @@ const App: React.FC = () => {
       )}
 
       {deleteContext.type && (
-        <DeleteModal 
-          type={deleteContext.type}
-          name={deleteContext.name}
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleteContext({ type: null, id: null, name: '' })}
-        />
+        <DeleteModal type={deleteContext.type} name={deleteContext.name} onConfirm={confirmDelete} onCancel={() => setDeleteContext({ type: null, id: null, name: '' })} />
       )}
     </div>
   );
