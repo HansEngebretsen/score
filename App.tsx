@@ -29,6 +29,35 @@ const App: React.FC = () => {
     type: null, id: null, name: ''
   });
 
+  // Safari Viewport Fixes
+  useEffect(() => {
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        document.documentElement.style.setProperty('--app-height', `${window.visualViewport.height}px`);
+      }
+    };
+
+    const handleBlur = (e: FocusEvent) => {
+      // If an input is blurred, force scroll to 0 to recover from Safari's shift
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        window.scrollTo(0, 0);
+      }
+    };
+
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('scroll', handleViewportChange);
+    document.addEventListener('focusout', handleBlur);
+
+    // Initial set
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+      document.removeEventListener('focusout', handleBlur);
+    };
+  }, []);
+
   useEffect(() => { localStorage.setItem(DB_KEY, JSON.stringify(state)); }, [state]);
 
   useEffect(() => {
@@ -123,7 +152,7 @@ const App: React.FC = () => {
   const activeGame = state.games.find(g => g.id === state.activeGameId);
 
   return (
-    <div className="h-screen w-screen flex flex-col selection:bg-pink-500/30 overflow-hidden relative">
+    <div className="flex-1 flex flex-col selection:bg-pink-500/30 overflow-hidden relative" style={{ height: 'var(--app-height)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
         <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>

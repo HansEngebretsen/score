@@ -73,8 +73,9 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   const date = new Date(game.id);
 
   return (
-    <div className="flex flex-col h-full z-10 transition-opacity duration-300">
-      <header className="bg-magical-bg/95 backdrop-blur-xl border-b border-magical-border shrink-0 z-50 shadow-sm relative overflow-visible pt-[var(--safe-top)]">
+    <div className="flex flex-col h-full z-10 transition-opacity duration-300 overflow-hidden">
+      {/* Header is in-flow to prevent orphans when Safari pushes viewport */}
+      <header className="bg-magical-bg/95 backdrop-blur-xl border-b border-magical-border shrink-0 z-50 shadow-sm relative pt-[var(--safe-top)]">
         <div className="flex items-center justify-between px-3 h-14">
           <div className="flex items-center gap-1 z-10">
             <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-magical-surface transition-colors active:scale-90 text-magical-muted" onClick={onGoBack}>
@@ -130,7 +131,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                       <div className="flex flex-col items-start gap-1 cursor-pointer z-10 pl-1" onClick={() => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, icon: getRandomEmoji() } : pl) })}>
                         <div className="text-2xl sm:text-3xl emoji-font leading-none group-hover:scale-110 transition-transform origin-left drop-shadow-sm">{p.icon}</div>
                         <input 
-                          className={`bg-transparent w-full min-w-0 font-bold text-base sm:text-lg lg:text-xl text-magical-muted focus:text-magical-text outline-none p-0 text-left truncate tracking-tight transition-colors ${p.isLeader ? 'text-magical-accent' : ''}`} 
+                          className={`bg-transparent w-full min-w-0 font-bold text-base text-magical-muted focus:text-magical-text outline-none p-0 text-left truncate tracking-tight transition-colors ${p.isLeader ? 'text-magical-accent' : ''}`} 
                           value={p.name} 
                           onChange={(e) => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, name: e.target.value } : pl) })} 
                           onFocus={(e) => e.target.select()} 
