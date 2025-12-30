@@ -119,8 +119,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[1.5rem] transition-all group overflow-hidden border-magical-border hover:border-magical-accent active:scale-95" 
               onClick={onNewGame}
             >
-              <div className="w-14 h-14 rounded-full bg-magical-surface2 group-hover:bg-magical-accent flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300">
-                <span className="material-symbols-rounded text-2xl text-magical-bg font-bold">add</span>
+              <div className="w-14 h-14 rounded-full bg-magical-accent text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300">
+                <span className="material-symbols-rounded text-2xl font-bold">add</span>
               </div>
               <span className="text-xs font-bold text-magical-muted uppercase tracking-wider z-10">New Game</span>
             </button>
@@ -141,14 +141,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <span className="material-symbols-rounded text-lg">close</span>
                     </button>
 
-                    <div className="flex justify-between items-start z-10">
-                      <span className="text-[10px] font-bold text-magical-muted bg-magical-bg px-2 py-1 rounded-lg">
+                    {/* Centered Winner Icon / Ellipsis */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                        {isOver ? (
+                          <span className="text-5xl filter-none drop-shadow-md transition-transform group-hover:scale-110">{leader.icon}</span>
+                        ) : (
+                          <span className="text-2xl font-bold text-magical-muted/20 tracking-widest">...</span>
+                        )}
+                    </div>
+
+                    <div className="flex justify-between items-start z-10 relative">
+                      <span className="text-[10px] font-bold text-magical-muted bg-magical-bg px-2 py-1 rounded-lg z-10">
                         {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
-                      <span className="text-xs grayscale group-hover:grayscale-0 scale-125 transition-all">{leader.icon}</span>
                     </div>
                     
-                    <div className="z-10 mt-2">
+                    <div className="z-10 mt-2 relative">
                       <div className="flex justify-between items-end mb-2">
                         <span className="text-sm font-bold truncate max-w-[100px]">{leader.n}</span>
                         <span className="text-[10px] font-mono text-magical-muted">{leader.s}/{g.targetScore}</span>

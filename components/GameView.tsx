@@ -15,18 +15,17 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   const [activeRow, setActiveRow] = useState<number | null>(null);
   const [focusedCell, setFocusedCell] = useState<{ pId: string; r: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const prevPlayerCount = useRef(game.players.length);
 
-  // Auto-scroll to the end when a new player is added or edit mode is toggled
+  // Auto-scroll to the end when a new player is added
   useEffect(() => {
-    if (game.players.length > prevPlayerCount.current || isEditing) {
+    if (game.players.length > prevPlayerCount.current) {
       setTimeout(() => {
         window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
       }, 100);
     }
     prevPlayerCount.current = game.players.length;
-  }, [game.players.length, isEditing]);
+  }, [game.players.length]);
 
   const playerStats = useMemo(() => {
     const meta = game.players.map(p => ({ total: p.scores.reduce((a, b) => a + (b || 0), 0) }));
@@ -109,17 +108,11 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
 
           {/* Controls */}
           <div className="flex items-center gap-2 min-w-[3rem] justify-end z-10">
-            <button className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform" onClick={addPlayer}>
+            <button className="w-9 h-9 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform" onClick={addPlayer}>
                <span className="material-symbols-rounded text-xl">person_add</span>
             </button>
             <button className="w-9 h-9 flex items-center justify-center rounded-full text-magical-muted hover:bg-magical-surface transition-colors" onClick={() => setShowSettings(true)}>
               <span className="material-symbols-rounded text-xl">tune</span>
-            </button>
-            <button 
-              className={`md:hidden w-9 h-9 flex items-center justify-center rounded-full border transition-all active:scale-90 ${isEditing ? 'bg-magical-accent text-white border-transparent' : 'bg-transparent text-magical-muted border-transparent'}`} 
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <span className="material-symbols-rounded text-xl">{isEditing ? 'check' : 'edit'}</span>
             </button>
           </div>
         </div>
@@ -130,7 +123,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
         <div 
           style={{ 
             display: 'grid', 
-            gridTemplateColumns: `3.5rem repeat(${game.players.length}, minmax(63px, 1fr)) ${isEditing ? '5rem' : ''}`, 
+            gridTemplateColumns: `3.5rem repeat(${game.players.length}, minmax(63px, 1fr))`, 
             gridTemplateRows: 'minmax(var(--header-height), auto)', // Dynamic height for desktop
             gridAutoRows: 'var(--row-height)',
             width: 'fit-content',
@@ -156,7 +149,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                   style={{ top: 'var(--nav-height)' }}
                >
                   {/* Delete Button */}
-                  <div className={`absolute top-0 right-0 z-[70] p-1 transition-opacity duration-200 ${isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <div className="absolute top-0 right-0 z-[70] p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
                     <button 
                       className="w-8 h-8 flex items-center justify-center text-magical-accent dark:text-white hover:scale-110 active:scale-90 transition-transform"
                       onClick={(e) => { 
@@ -183,7 +176,6 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                         onChange={(e) => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, name: e.target.value } : pl) })} 
                         onFocus={(e) => e.target.select()} 
                         onClick={(e) => e.stopPropagation()}
-                        disabled={isEditing} 
                       />
                     </div>
                     <div className="text-center z-10 mt-0.5">
@@ -205,17 +197,6 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                </div>
              );
           })}
-
-          {isEditing && (
-             <div 
-              className="sticky z-[50] flex items-center justify-center border-b border-magical-border bg-magical-bg/50 backdrop-blur-sm animate-fade-in"
-              style={{ top: 'var(--nav-height)' }}
-             >
-               <button className="w-12 h-12 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90" onClick={addPlayer}>
-                <span className="material-symbols-rounded text-3xl">person_add</span>
-              </button>
-             </div>
-          )}
 
           {/* Grid Scores */}
           {Array.from({ length: game.roundCount }).map((_, r) => (
@@ -240,7 +221,6 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                   </div>
                 );
               })}
-              {isEditing && <div className="border-b border-magical-border bg-magical-bg/10"></div>}
             </React.Fragment>
           ))}
           <div style={{ gridColumn: '1 / -1', height: '12rem' }}></div>
