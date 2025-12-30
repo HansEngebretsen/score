@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppState, Game, Player, LeaderboardMetric } from './types';
 import { DB_KEY, getRandomEmoji } from './constants';
@@ -28,7 +29,6 @@ const App: React.FC = () => {
     type: null, id: null, name: ''
   });
 
-  // Sync Theme Color and Color Scheme with the browser chrome
   useEffect(() => {
     document.documentElement.classList.toggle('dark', state.theme === 'dark');
     document.documentElement.style.colorScheme = state.theme;
@@ -129,25 +129,27 @@ const App: React.FC = () => {
   const activeGame = state.games.find(g => g.id === state.activeGameId);
 
   return (
-    <div id="root">
+    <div className="min-h-screen flex flex-col relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
         <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-4s' }}></div>
       </div>
 
-      {state.view === 'dashboard' ? (
-        <Dashboard 
-          games={state.games} metric={state.leaderboardMetric} setMetric={setMetric} onNewGame={createNewGame} 
-          onLoadGame={loadGame} onPromptDelete={promptDelete} theme={state.theme} onToggleTheme={toggleTheme} 
-        />
-      ) : activeGame ? (
-        <GameView game={activeGame} onGoBack={goToDashboard} onUpdate={updateGameState} onPromptDelete={promptDelete} />
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-            <button onClick={goToDashboard} className="p-4 bg-magical-accent text-white rounded-xl">Back to Dashboard</button>
-        </div>
-      )}
+      <div className="relative z-10 flex flex-col flex-1">
+        {state.view === 'dashboard' ? (
+          <Dashboard 
+            games={state.games} metric={state.leaderboardMetric} setMetric={setMetric} onNewGame={createNewGame} 
+            onLoadGame={loadGame} onPromptDelete={promptDelete} theme={state.theme} onToggleTheme={toggleTheme} 
+          />
+        ) : activeGame ? (
+          <GameView game={activeGame} onGoBack={goToDashboard} onUpdate={updateGameState} onPromptDelete={promptDelete} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-12">
+              <button onClick={goToDashboard} className="px-8 py-4 bg-magical-accent text-white rounded-2xl font-bold shadow-xl">Back to Dashboard</button>
+          </div>
+        )}
+      </div>
 
       {deleteContext.type && (
         <DeleteModal type={deleteContext.type} name={deleteContext.name} onConfirm={confirmDelete} onCancel={() => setDeleteContext({ type: null, id: null, name: '' })} />
