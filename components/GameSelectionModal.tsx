@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { GameType } from '../types';
+import { LOGO_URL, THIRTEEN_LOGO_LARGE } from '../constants';
 
 interface GameSelectionModalProps {
   activeType: GameType;
@@ -11,35 +11,42 @@ interface GameSelectionModalProps {
 const GameSelectionModal: React.FC<GameSelectionModalProps> = ({ activeType, onSelect, onClose }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-fade-in" onClick={onClose}>
-      <div className="bg-magical-surface border border-magical-border rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl pop-in" onClick={e => e.stopPropagation()}>
-        <h3 className="text-2xl font-bold text-magical-text mb-8 text-center">Select Game</h3>
-        
-        <div className="space-y-4">
-          <button 
-            onClick={() => onSelect('flip7')}
-            className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all group ${activeType === 'flip7' ? 'border-magical-accent bg-magical-surface2' : 'border-magical-border bg-transparent hover:border-magical-muted'}`}
-          >
-            <div className="flex flex-col items-start text-left">
-              <span className={`text-lg font-bold ${activeType === 'flip7' ? 'text-magical-accent' : 'text-magical-text'}`}>Flip 7</span>
-              <span className="text-xs text-magical-muted text-left">Claim the throne of glory by flipping all 7</span>
-            </div>
-            {activeType === 'flip7' && <span className="material-symbols-rounded text-magical-accent text-2xl">check_circle</span>}
-          </button>
+      <div 
+        className="w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl pop-in flex flex-col" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Flip 7 Half */}
+        <button 
+          onClick={() => onSelect('flip7')}
+          className="relative w-full h-48 bg-[#2e1065] flex items-center justify-center p-8 transition-transform active:scale-95 hover:brightness-110"
+        >
+          <img 
+            src={LOGO_URL} 
+            alt="Flip 7" 
+            className="w-full h-full object-contain drop-shadow-2xl"
+          />
+          {activeType === 'flip7' && (
+             <div className="absolute top-4 right-4 bg-white/20 p-1 rounded-full backdrop-blur-sm">
+                <span className="material-symbols-rounded text-white text-xl">check</span>
+             </div>
+          )}
+        </button>
 
-          <button 
-            onClick={() => onSelect('thirteen')}
-            className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all group ${activeType === 'thirteen' ? 'border-white bg-magical-surface2' : 'border-magical-border bg-transparent hover:border-magical-muted'}`}
-          >
-            <div className="flex flex-col items-start text-left">
-              <span className={`text-lg font-bold ${activeType === 'thirteen' ? 'text-white' : 'text-magical-text'}`}>Thirteen</span>
-              <span className={`text-xs ${activeType === 'thirteen' ? 'text-white/80' : 'text-magical-muted'} text-left`}>triples and straights with the deck as wilds</span>
-            </div>
-            {activeType === 'thirteen' && <span className="material-symbols-rounded text-white text-2xl">check_circle</span>}
-          </button>
-        </div>
-        
-        <button className="w-full mt-8 py-3 text-magical-muted font-bold text-sm hover:text-magical-text transition-colors" onClick={onClose}>
-          CANCEL
+        {/* 13 Half */}
+        <button 
+          onClick={() => onSelect('thirteen')}
+          className="relative w-full h-48 bg-[#f1e7ca] flex items-center justify-center p-8 transition-transform active:scale-95 hover:brightness-95"
+        >
+           <img 
+            src={THIRTEEN_LOGO_LARGE} 
+            alt="Thirteen" 
+            className="w-full h-full object-contain"
+          />
+           {activeType === 'thirteen' && (
+             <div className="absolute top-4 right-4 bg-black/10 p-1 rounded-full backdrop-blur-sm">
+                <span className="material-symbols-rounded text-[#444441] text-xl">check</span>
+             </div>
+          )}
         </button>
       </div>
     </div>
