@@ -280,9 +280,9 @@ const App: React.FC = () => {
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {state.activeGameType !== 'thirteen' && (
           <>
-            <div className="absolute top-24 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
+            <div className="absolute top-48 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
             <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>
-            <div className="absolute bottom-24 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-4s' }}></div>
+            <div className="absolute bottom-48 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-4s' }}></div>
           </>
         )}
       </div>
