@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Game, Player } from '../types';
-import { LOGO_URL, getRandomEmoji } from '../constants';
+import { LOGO_URL, getRandomEmoji, THIRTEEN_LABELS, THIRTEEN_LOGO_SMALL } from '../constants';
 import SettingsModal from './SettingsModal';
 
 interface GameViewProps {
@@ -17,6 +16,8 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   const [showSettings, setShowSettings] = useState(false);
   const prevPlayerCount = useRef(game.players.length);
 
+  const isThirteen = game.type === 'thirteen';
+
   // Auto-scroll to the end when a new player is added
   useEffect(() => {
     if (game.players.length > prevPlayerCount.current) {
@@ -27,22 +28,82 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
     prevPlayerCount.current = game.players.length;
   }, [game.players.length]);
 
+  const nextActiveRow = useMemo(() => {
+      // Find the first row where ANY player has a null score
+      const idx = Array.from({ length: game.roundCount }).findIndex((_, r) => 
+          game.players.some(p => p.scores[r] === null)
+      );
+      return idx === -1 ? null : idx;
+  }, [game.players, game.roundCount]);
+
   const playerStats = useMemo(() => {
     const meta = game.players.map(p => ({ total: p.scores.reduce((a, b) => a + (b || 0), 0) }));
-    const maxScore = Math.max(...meta.map(m => m.total));
-    return game.players.map((p, idx) => ({
-      ...p,
-      total: meta[idx].total,
-      played: p.scores.filter(s => s !== null).length,
-      scored: p.scores.filter(s => s !== null && s > 0).length,
-      isLeader: meta[idx].total === maxScore && meta[idx].total > 0
-    }));
-  }, [game]);
+    
+    // Check if game has started (at least one score entered)
+    const hasGameStarted = game.players.some(p => p.scores.some(s => s !== null));
+
+    let bestTotal = -1;
+    let nextBestTotal = -1;
+
+    const totals = meta.map(m => m.total);
+    
+    if (isThirteen) {
+        // Low score wins
+        bestTotal = Math.min(...totals);
+        const sorted = [...totals].sort((a, b) => a - b);
+        nextBestTotal = sorted[1] ?? bestTotal;
+    } else {
+        // High score wins
+        bestTotal = Math.max(...totals);
+    }
+
+    return game.players.map((p, idx) => {
+        const total = meta[idx].total;
+        
+        // For Thirteen, require game start. For Flip 7, require > 0 total (existing logic).
+        const isLeader = isThirteen 
+            ? (hasGameStarted && total === bestTotal)
+            : (total === bestTotal && total > 0);
+        
+        let statusText = "";
+        let isWinning = false;
+
+        if (isThirteen) {
+            if (isLeader) {
+                const diff = nextBestTotal - total;
+                statusText = diff > 0 ? `-${diff}` : "LEADER";
+                isWinning = true;
+            } else {
+                const diff = total - bestTotal;
+                statusText = `+${diff}`;
+            }
+        } else {
+            // Flip 7 Logic
+            const rem = (game.targetScore || 200) - total;
+            if (rem <= 0) {
+                statusText = "WINNER!";
+                isWinning = true;
+            } else {
+                statusText = `${rem} LEFT`;
+            }
+        }
+
+        return {
+            ...p,
+            total,
+            played: p.scores.filter(s => s !== null).length,
+            scored: p.scores.filter(s => s !== null && s > 0).length,
+            isLeader,
+            statusText,
+            isWinning
+        };
+    });
+  }, [game, isThirteen]);
 
   const sortPlayersByLeader = (players: Player[]) => [...players].sort((a, b) => {
     const totalA = a.scores.reduce((acc, v) => acc + (v || 0), 0);
     const totalB = b.scores.reduce((acc, v) => acc + (v || 0), 0);
-    return totalB - totalA;
+    return isThirteen ? totalA - totalB : totalB - totalA;
   });
 
   const handleScoreInput = (pId: string, rowIndex: number, value: string) => {
@@ -57,7 +118,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
     });
 
     let newRoundCount = game.roundCount;
-    if (val !== null && rowIndex === game.roundCount - 1) {
+    if (!isThirteen && val !== null && rowIndex === game.roundCount - 1) {
       newRoundCount++;
       updatedPlayers.forEach(p => p.scores.push(null));
     }
@@ -103,17 +164,25 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
           
           {/* Logo Area */}
           <div className="absolute left-1/2 top-0 transform -translate-x-1/2 z-[101] mt-[6px] pointer-events-none">
-            <img src={LOGO_URL} alt="Flip 7" className="w-auto object-contain drop-shadow-2xl" style={{ maxHeight: '55px' }} />
+            <img src={isThirteen ? THIRTEEN_LOGO_SMALL : LOGO_URL} alt="Flip 7" className="w-auto object-contain drop-shadow-2xl" style={{ maxHeight: '55px' }} />
           </div>
 
           {/* Controls */}
           <div className="flex items-center gap-2 min-w-[3rem] justify-end z-10">
-            <button className="w-9 h-9 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform" onClick={addPlayer}>
+            <button 
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform" 
+                onClick={addPlayer}
+                style={isThirteen ? { color: 'var(--icon-add)' } : {}}
+            >
                <span className="material-symbols-rounded text-xl">person_add</span>
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full text-magical-muted hover:bg-magical-surface transition-colors" onClick={() => setShowSettings(true)}>
-              <span className="material-symbols-rounded text-xl">tune</span>
-            </button>
+            {!isThirteen && (
+                <button className="w-9 h-9 flex items-center justify-center rounded-full text-magical-muted hover:bg-magical-surface transition-colors" onClick={() => setShowSettings(true)}>
+                  <span className="material-symbols-rounded text-xl">tune</span>
+                </button>
+            )}
+            {/* Spacer for Thirteen to balance logo */}
+            {isThirteen && <div className="w-9 h-9"></div>}
           </div>
         </div>
       </header>
@@ -129,7 +198,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
             width: 'fit-content',
             minWidth: '100%', 
           } as any} 
-          className="px-[var(--safe-left)] pr-[var(--safe-right)]"
+          className={`px-[var(--safe-left)] pr-[var(--safe-right)] ${isThirteen ? 'no-overscroll' : ''}`}
         >
           {/* Sticky Corner Cell */}
           <div 
@@ -141,7 +210,6 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
 
           {/* Player Columns Headers */}
           {playerStats.map(p => {
-             const rem = game.targetScore - p.total;
              return (
                <div 
                   key={p.id} 
@@ -151,7 +219,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                   {/* Delete Button */}
                   <div className="absolute top-0 right-0 z-[70] p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
                     <button 
-                      className="w-8 h-8 flex items-center justify-center text-magical-accent dark:text-white hover:scale-110 active:scale-90 transition-transform"
+                      className={`w-8 h-8 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform ${isThirteen ? 'text-[#444441]' : 'text-magical-accent dark:text-white'}`}
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         if (p.scores.some(s => s !== null)) {
@@ -167,11 +235,15 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                   </div>
 
                   <div className="flex flex-col justify-between h-full py-0.5 relative overflow-hidden">
-                    {p.isLeader && <div className="absolute -top-6 -right-6 w-12 h-12 bg-yellow-400/20 rounded-full blur-lg animate-pulse"></div>}
+                    {p.isLeader && !isThirteen && <div className="absolute -top-6 -right-6 w-12 h-12 bg-yellow-400/20 rounded-full blur-lg animate-pulse"></div>}
                     <div className="flex flex-col items-start gap-0 cursor-pointer z-10 pl-1" onClick={() => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, icon: getRandomEmoji() } : pl) })}>
                       <div className="text-xl sm:text-2xl emoji-font leading-none group-hover:scale-110 transition-transform origin-left drop-shadow-sm mb-0.5">{p.icon}</div>
                       <input 
-                        className={`bg-transparent w-full min-w-0 font-bold text-sm outline-none p-0 text-left truncate tracking-tight transition-colors ${p.isLeader ? 'text-magical-text' : 'text-magical-muted focus:text-magical-text'}`} 
+                        className={`bg-transparent w-full min-w-0 font-bold text-sm outline-none p-0 text-left truncate tracking-tight transition-colors ${
+                            isThirteen 
+                                ? (p.isLeader ? 'text-white' : 'text-[#444441]') 
+                                : (p.isLeader ? 'text-magical-text' : 'text-magical-muted focus:text-magical-text')
+                        }`} 
                         value={p.name} 
                         onChange={(e) => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, name: e.target.value } : pl) })} 
                         onFocus={(e) => e.target.select()} 
@@ -179,18 +251,21 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                       />
                     </div>
                     <div className="text-center z-10 mt-0.5">
-                      <div className={`text-2xl sm:text-3xl font-bold tracking-tighter leading-none ${p.isLeader ? 'text-magical-accent' : 'text-magical-text'}`}>{p.total}</div>
+                      <div className={`text-2xl sm:text-3xl font-bold tracking-tighter leading-none ${
+                          isThirteen 
+                            ? (p.isLeader ? 'text-white' : 'text-[#444441]')
+                            : (p.isLeader ? 'text-magical-accent' : 'text-magical-text')
+                      }`}>{p.total}</div>
                     </div>
                     <div className="text-center z-10 px-0.5 w-full header-footer-container">
-                      <div className={`text-[0.65rem] md:text-xs font-bold font-mono tracking-tight uppercase ${rem <= 0 ? 'text-magical-text animate-pulse' : 'text-magical-muted'} flex justify-center w-full gap-x-1 whitespace-nowrap overflow-hidden`}>
-                        {rem <= 0 ? (
-                            <span>WINNER!</span>
-                        ) : (
-                            <>
-                                <span>{rem} LEFT</span>
-                                <span className="extra-info opacity-60">| {p.scored}/{p.played}</span>
-                            </>
-                        )}
+                      <div className={`text-[0.65rem] md:text-xs font-bold font-mono tracking-tight uppercase ${
+                          isThirteen
+                            ? (p.isLeader ? 'text-white' : 'text-[#444441]')
+                            : (p.isWinning ? 'text-magical-text animate-pulse' : 'text-magical-muted')
+                      } flex justify-center w-full gap-x-1 whitespace-nowrap overflow-hidden`}>
+                         <span>{p.statusText}</span>
+                         {/* Show stats only for Flip 7 */}
+                         {!isThirteen && !p.isWinning && <span className="extra-info opacity-60">| {p.scored}/{p.played}</span>}
                       </div>
                     </div>
                   </div>
@@ -201,13 +276,18 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
           {/* Grid Scores */}
           {Array.from({ length: game.roundCount }).map((_, r) => (
             <React.Fragment key={r}>
-              <div className={`sticky left-0 z-[40] border-r-2 border-b border-magical-border bg-magical-bg flex items-center justify-center font-bold font-mono text-xs ${activeRow === r ? 'text-magical-accent' : 'text-magical-muted'}`}>
-                {r + 1}
+              <div 
+                className={`sticky left-0 z-[40] border-r-2 border-b border-magical-border bg-magical-bg flex items-center justify-center font-bold font-mono text-xs transition-colors duration-300
+                    ${activeRow === r ? (isThirteen ? 'text-magical-muted' : 'text-magical-accent') : 'text-magical-muted'}
+                    ${isThirteen && r === nextActiveRow ? 'bg-[#e3d6b2]' : ''}
+                `}
+              >
+                {isThirteen ? THIRTEEN_LABELS[r] || (r + 1) : (r + 1)}
               </div>
               {game.players.map(p => {
                 const isFocused = focusedCell?.pId === p.id && focusedCell?.r === r;
                 return (
-                  <div key={`${p.id}-${r}`} className={`border-r border-b border-magical-border h-[var(--row-height)] transition-all ${isFocused ? 'bg-magical-surface/80 ring-2 ring-inset ring-magical-accent z-[30]' : ''} ${activeRow === r && !isFocused ? 'bg-magical-surface/40' : 'bg-transparent'}`}>
+                  <div key={`${p.id}-${r}`} className={`border-r border-b border-magical-border h-[var(--row-height)] transition-all ${isFocused ? (isThirteen ? 'bg-magical-surface/80 ring-2 ring-inset ring-[color:var(--highlight-winner)] z-[30]' : 'bg-magical-surface/80 ring-2 ring-inset ring-magical-accent z-[30]') : ''} ${activeRow === r && !isFocused ? 'bg-magical-surface/40' : 'bg-transparent'}`}>
                     <input 
                       type="number" 
                       inputMode="numeric" 
@@ -229,10 +309,10 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
       
       {showSettings && (
         <SettingsModal 
-          targetScore={game.targetScore} 
+          targetScore={game.targetScore || 200} 
           reorderEnabled={game.reorderEnabled ?? true} 
           onSave={(targetScore, reorderEnabled) => { 
-            onUpdate({ ...game, targetScore, reorderEnabled, players: reorderEnabled ? sortPlayersByLeader(game.players) : game.players }); 
+            onUpdate({ ...game, targetScore: isThirteen ? null : targetScore, reorderEnabled, players: reorderEnabled ? sortPlayersByLeader(game.players) : game.players }); 
             setShowSettings(false); 
           }} 
           onClose={() => setShowSettings(false)} 
@@ -257,6 +337,20 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
           background-image: linear-gradient(180deg, rgba(244, 114, 182, 0.15) 0%, rgba(244, 114, 182, 0.05) 100%) !important; 
         }
         .is-leader-header-alt input { color: var(--text-main) !important; }
+
+        .thirteen-mode .is-leader-header-alt {
+             background-image: none !important;
+             background-color: var(--highlight-winner) !important;
+        }
+        .thirteen-mode .is-leader-header-alt input,
+        .thirteen-mode .is-leader-header-alt .text-magical-text,
+        .thirteen-mode .is-leader-header-alt .text-magical-accent,
+        .thirteen-mode .is-leader-header-alt .text-2xl,
+        .thirteen-mode .is-leader-header-alt .text-[0.65rem] {
+             color: #ffffff !important;
+        }
+        /* Override specifically for the winner header to ensure everything is white */
+        .thirteen-mode .is-leader-header-alt input { color: white !important; }
       `}</style>
     </div>
   );

@@ -1,18 +1,37 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AppState, Game, Player, LeaderboardMetric } from './types';
+import { AppState, Game, Player, LeaderboardMetric, GameType } from './types';
 import { DB_KEY, getRandomEmoji } from './constants';
 import Dashboard from './components/Dashboard';
 import GameView from './components/GameView';
 import DeleteModal from './components/DeleteModal';
+import GameSelectionModal from './components/GameSelectionModal';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(DB_KEY);
+    const urlType = window.location.pathname === '/13' ? 'thirteen' : 'flip7';
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return { reorderEnabled: true, ...parsed };
+        // Migration: Ensure games have a type and activeGameType is set
+        const games = (parsed.games || []).map((g: any) => ({
+           ...g,
+           type: g.type || 'flip7',
+           targetScore: g.targetScore !== undefined ? g.targetScore : 200 // Ensure targetScore exists for old games
+        }));
+        
+        return { 
+          view: 'dashboard',
+          activeGameId: null,
+          leaderboardMetric: 'wins',
+          theme: 'dark',
+          reorderEnabled: true,
+          ...parsed,
+          activeGameType: urlType, // URL takes precedence on load
+          games
+        };
       } catch (e) { console.error("Error loading state", e); }
     }
     return {
@@ -21,7 +40,8 @@ const App: React.FC = () => {
       leaderboardMetric: 'wins',
       theme: 'dark',
       games: [],
-      reorderEnabled: true
+      reorderEnabled: true,
+      activeGameType: urlType
     };
   });
 
@@ -29,15 +49,36 @@ const App: React.FC = () => {
     type: null, id: null, name: ''
   });
 
+  const [showGameSelector, setShowGameSelector] = useState(false);
+
+  // Handle Browser Navigation
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', state.theme === 'dark');
-    document.documentElement.style.colorScheme = state.theme;
+      const handlePopState = () => {
+          const type = window.location.pathname === '/13' ? 'thirteen' : 'flip7';
+          setState(prev => ({ ...prev, activeGameType: type }));
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const isThirteen = state.activeGameType === 'thirteen';
+    document.documentElement.classList.toggle('thirteen-mode', isThirteen);
     
-    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', state.theme === 'dark' ? '#2e1065' : '#fdf4ff');
+    if (isThirteen) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) themeColorMeta.setAttribute('content', '#f1e7ca');
+    } else {
+        document.documentElement.classList.toggle('dark', state.theme === 'dark');
+        document.documentElement.style.colorScheme = state.theme;
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) {
+          themeColorMeta.setAttribute('content', state.theme === 'dark' ? '#2e1065' : '#fdf4ff');
+        }
     }
-  }, [state.theme]);
+  }, [state.theme, state.activeGameType]);
 
   useEffect(() => { localStorage.setItem(DB_KEY, JSON.stringify(state)); }, [state]);
 
@@ -45,34 +86,46 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' }));
   }, []);
 
+  const switchGameType = useCallback((type: GameType) => {
+    setState(prev => ({ ...prev, activeGameType: type }));
+    setShowGameSelector(false);
+    
+    // Update URL
+    const path = type === 'thirteen' ? '/13' : '/';
+    window.history.pushState({}, '', path);
+  }, []);
+
   const setMetric = useCallback((metric: LeaderboardMetric) => {
     setState(prev => ({ ...prev, leaderboardMetric: metric }));
   }, []);
 
   const createNewGame = useCallback(() => {
-    const lastGame = state.games[0];
+    // Find last game of the SAME type to copy players
+    const lastGame = state.games.find(g => g.type === state.activeGameType);
     let newPlayers: Player[] = [];
+    const isThirteen = state.activeGameType === 'thirteen';
 
     if (lastGame) {
       newPlayers = lastGame.players.map((p, idx) => ({
         id: `p${Date.now()}${idx}`,
         name: p.name,
         icon: p.icon,
-        scores: [null]
+        scores: isThirteen ? new Array(13).fill(null) : [null]
       }));
     } else {
       newPlayers = [
-        { id: `p${Date.now()}1`, name: "P1", icon: getRandomEmoji(), scores: [null] },
-        { id: `p${Date.now()}2`, name: "P2", icon: getRandomEmoji(), scores: [null] },
-        { id: `p${Date.now()}3`, name: "P3", icon: getRandomEmoji(), scores: [null] },
-        { id: `p${Date.now()}4`, name: "P4", icon: getRandomEmoji(), scores: [null] }
+        { id: `p${Date.now()}1`, name: "P1", icon: getRandomEmoji(), scores: isThirteen ? new Array(13).fill(null) : [null] },
+        { id: `p${Date.now()}2`, name: "P2", icon: getRandomEmoji(), scores: isThirteen ? new Array(13).fill(null) : [null] },
+        { id: `p${Date.now()}3`, name: "P3", icon: getRandomEmoji(), scores: isThirteen ? new Array(13).fill(null) : [null] },
+        { id: `p${Date.now()}4`, name: "P4", icon: getRandomEmoji(), scores: isThirteen ? new Array(13).fill(null) : [null] }
       ];
     }
 
     const newGame: Game = {
       id: Date.now(),
-      targetScore: lastGame ? lastGame.targetScore : 200,
-      roundCount: 1,
+      type: state.activeGameType,
+      targetScore: isThirteen ? null : (lastGame ? lastGame.targetScore : 200),
+      roundCount: isThirteen ? 13 : 1,
       players: newPlayers,
       reorderEnabled: state.reorderEnabled
     };
@@ -83,7 +136,7 @@ const App: React.FC = () => {
       activeGameId: newGame.id,
       view: 'game'
     }));
-  }, [state.games, state.reorderEnabled]);
+  }, [state.games, state.reorderEnabled, state.activeGameType]);
 
   const loadGame = useCallback((id: number) => {
     setState(prev => ({ ...prev, activeGameId: id, view: 'game' }));
@@ -127,20 +180,33 @@ const App: React.FC = () => {
   }, [deleteContext]);
 
   const activeGame = state.games.find(g => g.id === state.activeGameId);
+  const displayedGames = state.games.filter(g => g.type === state.activeGameType);
 
   return (
     <div className="min-h-screen flex flex-col relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-4s' }}></div>
+        {state.activeGameType !== 'thirteen' && (
+          <>
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
+            <div className="absolute top-1/2 right-0 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-2s' }}></div>
+            <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '-4s' }}></div>
+          </>
+        )}
       </div>
 
       <div className="relative z-10 flex flex-col flex-1">
         {state.view === 'dashboard' ? (
           <Dashboard 
-            games={state.games} metric={state.leaderboardMetric} setMetric={setMetric} onNewGame={createNewGame} 
-            onLoadGame={loadGame} onPromptDelete={promptDelete} theme={state.theme} onToggleTheme={toggleTheme} 
+            games={displayedGames} 
+            activeGameType={state.activeGameType}
+            metric={state.leaderboardMetric} 
+            setMetric={setMetric} 
+            onNewGame={createNewGame} 
+            onLoadGame={loadGame} 
+            onPromptDelete={promptDelete} 
+            theme={state.theme} 
+            onToggleTheme={toggleTheme}
+            onLogoClick={() => setShowGameSelector(true)}
           />
         ) : activeGame ? (
           <GameView game={activeGame} onGoBack={goToDashboard} onUpdate={updateGameState} onPromptDelete={promptDelete} />
@@ -153,6 +219,10 @@ const App: React.FC = () => {
 
       {deleteContext.type && (
         <DeleteModal type={deleteContext.type} name={deleteContext.name} onConfirm={confirmDelete} onCancel={() => setDeleteContext({ type: null, id: null, name: '' })} />
+      )}
+
+      {showGameSelector && (
+        <GameSelectionModal activeType={state.activeGameType} onSelect={switchGameType} onClose={() => setShowGameSelector(false)} />
       )}
     </div>
   );

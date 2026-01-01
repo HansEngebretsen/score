@@ -76,7 +76,24 @@
             --text-muted: #c4b5fd;
             --accent: #f472b6;
         }
+
+        .thirteen-mode {
+            --bg-app: #f1e7ca;
+            --bg-surface: #e1cfa9;
+            --bg-surface-2: #a88b51;
+            --border: #a88b51;
+            --text-main: #444441;
+            --text-muted: #712b3f;
+            --accent: #b12b4b; /* Keep standard accent */
+            --highlight-winner: #a3895a; /* Mustard/Gold Updated */
+            --icon-add: #712b3f; /* Deep Red */
+            
+            /* Reduced row height for Thirteen */
+            --row-height: 2.75rem;
+        }
         
+        .no-overscroll { overscroll-behavior: none; }
+
         html, body { 
             min-height: 100%;
             width: 100%;
@@ -103,6 +120,16 @@
 
         input {
             font-size: 16px !important;
+        }
+        
+        /* Hide numeric spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
         }
         
         .fade-in {

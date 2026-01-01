@@ -1,10 +1,11 @@
 
 import React, { useMemo } from 'react';
-import { Game, LeaderboardMetric, Theme } from '../types';
-import { LOGO_URL } from '../constants';
+import { Game, LeaderboardMetric, Theme, GameType } from '../types';
+import { LOGO_URL, THIRTEEN_LOGO_LARGE } from '../constants';
 
 interface DashboardProps {
   games: Game[];
+  activeGameType: GameType;
   metric: LeaderboardMetric;
   setMetric: (m: LeaderboardMetric) => void;
   onNewGame: () => void;
@@ -12,37 +13,71 @@ interface DashboardProps {
   onPromptDelete: (type: 'game', id: number, name: string) => void;
   theme: Theme;
   onToggleTheme: () => void;
+  onLogoClick: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-  games, metric, setMetric, onNewGame, onLoadGame, onPromptDelete, theme, onToggleTheme 
+  games, activeGameType, metric, setMetric, onNewGame, onLoadGame, onPromptDelete, theme, onToggleTheme, onLogoClick 
 }) => {
 
+  const isLowScoreWins = activeGameType === 'thirteen';
+
   const hasCompletedGame = useMemo(() => {
-    return games.some(g => g.players.some(p => p.scores.reduce((a, b) => a + (b || 0), 0) >= g.targetScore));
+    return games.some(g => {
+        if (g.type === 'thirteen') {
+             return g.players.some(p => p.scores.filter(s => s !== null).length === 13);
+        }
+        return g.players.some(p => p.scores.reduce((a, b) => a + (b || 0), 0) >= (g.targetScore || 200));
+    });
   }, [games]);
 
   const leaderboard = useMemo(() => {
     if (!hasCompletedGame) return [];
     const stats: Record<string, { wins: number; score: number; icon: string }> = {};
+    
     games.forEach(g => {
       let winnerName = null;
-      let maxScore = -1;
+      let bestScore = isLowScoreWins ? Infinity : -1;
+      
+      const gameIsComplete = g.type === 'thirteen' 
+         ? g.players.some(p => p.scores.filter(s => s !== null).length === 13)
+         : g.players.some(p => p.scores.reduce((a, b) => a + (b || 0), 0) >= (g.targetScore || 200));
+         
+      if (!gameIsComplete) return;
+
       g.players.forEach(p => {
         const total = p.scores.reduce((a, b) => a + (b || 0), 0);
         if (!stats[p.name]) stats[p.name] = { wins: 0, score: 0, icon: p.icon };
         stats[p.name].score += total;
-        if (total >= g.targetScore && total > maxScore) {
-          maxScore = total;
-          winnerName = p.name;
+        
+        if (isLowScoreWins) {
+             if (p.scores.filter(s => s !== null).length === 13 && total < bestScore) {
+                 bestScore = total;
+                 winnerName = p.name;
+             }
+        } else {
+             if (total >= (g.targetScore || 200) && total > bestScore) {
+                 bestScore = total;
+                 winnerName = p.name;
+             }
         }
       });
       if (winnerName) stats[winnerName].wins += 1;
     });
+
     const sorted = Object.entries(stats).map(([name, s]) => ({ name, ...s }));
-    metric === 'wins' ? sorted.sort((a, b) => b.wins - a.wins || b.score - a.score) : sorted.sort((a, b) => b.score - a.score);
+    
+    if (metric === 'wins') {
+        sorted.sort((a, b) => b.wins - a.wins); 
+    } else {
+        if (isLowScoreWins) {
+             sorted.sort((a, b) => a.score - b.score);
+        } else {
+             sorted.sort((a, b) => b.score - a.score);
+        }
+    }
     return sorted.slice(0, 10);
-  }, [games, metric, hasCompletedGame]);
+  }, [games, metric, hasCompletedGame, isLowScoreWins]);
 
   const maxVal = useMemo(() => {
     if (leaderboard.length === 0) return 1;
@@ -53,21 +88,30 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="flex flex-col z-10 fade-in pb-[calc(4rem+var(--safe-bottom))] pt-[var(--safe-top)]">
       {/* Top Controls */}
       <div className="pt-6 px-6 flex justify-end items-center">
-        <button className="w-10 h-10 rounded-full bg-magical-surface text-magical-muted hover:text-magical-text hover:bg-magical-surface2 transition-all flex items-center justify-center shadow-lg" onClick={onToggleTheme}>
-          <span className="material-symbols-rounded text-xl">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
-        </button>
+        {!isLowScoreWins && (
+            <button className="w-10 h-10 rounded-full bg-magical-surface text-magical-muted hover:text-magical-text hover:bg-magical-surface2 transition-all flex items-center justify-center shadow-lg" onClick={onToggleTheme}>
+            <span className="material-symbols-rounded text-xl">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+            </button>
+        )}
       </div>
 
       <div className="p-4 space-y-10 px-[calc(1rem+var(--safe-left))] pr-[calc(1rem+var(--safe-right))]">
         {/* Hero / Logo Section */}
         <div className="flex flex-col items-center justify-center px-2 -mt-8">
-          <div className="relative group cursor-pointer" onClick={onToggleTheme}>
-            <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-violet-500 rounded-3xl blur-[40px] opacity-40 animate-pulse"></div>
-            <div className="relative w-80 h-40 bg-transparent flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-               <img src={LOGO_URL} alt="Flip 7 Logo" className="w-full h-full object-contain drop-shadow-2xl" />
+          <div className="relative group cursor-pointer" onClick={onLogoClick}>
+            {!isLowScoreWins && <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-violet-500 rounded-3xl blur-[40px] opacity-40 animate-pulse"></div>}
+            <div 
+              className={`relative ${isLowScoreWins ? 'w-[480px] h-[240px] max-w-[90vw]' : 'w-80 h-40'} bg-transparent flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500`}
+              style={isLowScoreWins ? { marginTop: '25px' } : {}}
+            >
+               <img 
+                 src={isLowScoreWins ? THIRTEEN_LOGO_LARGE : LOGO_URL} 
+                 alt="Flip 7 Logo" 
+                 className={`w-full h-full object-contain ${isLowScoreWins ? '' : 'drop-shadow-2xl'}`} 
+               />
             </div>
           </div>
-          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.4em] mt-4 opacity-60">Score Keeper</p>
+          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.4em] mt-8 opacity-60">Score Keeper</p>
         </div>
 
         {/* Leaderboard Section */}
@@ -78,8 +122,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <span className="material-symbols-rounded text-base">trophy</span> Top Players
               </h2>
               <div className="bg-magical-bg p-1 rounded-xl border border-magical-border flex text-[10px] font-bold">
-                <button className={`px-3 py-1.5 rounded-lg transition-all ${metric === 'wins' ? 'bg-magical-surface2 text-magical-text shadow-sm' : 'text-magical-muted'}`} onClick={() => setMetric('wins')}>Wins</button>
-                <button className={`px-3 py-1.5 rounded-lg transition-all ${metric === 'score' ? 'bg-magical-surface2 text-magical-text shadow-sm' : 'text-magical-muted'}`} onClick={() => setMetric('score')}>Score</button>
+                <button className={`px-3 py-1.5 rounded-lg transition-all ${metric === 'wins' ? `bg-magical-surface2 ${isLowScoreWins ? 'text-white' : 'text-magical-text'} shadow-sm` : 'text-magical-muted'}`} onClick={() => setMetric('wins')}>Wins</button>
+                <button className={`px-3 py-1.5 rounded-lg transition-all ${metric === 'score' ? `bg-magical-surface2 ${isLowScoreWins ? 'text-white' : 'text-magical-text'} shadow-sm` : 'text-magical-muted'}`} onClick={() => setMetric('score')}>Score</button>
               </div>
             </div>
             
@@ -88,7 +132,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               {leaderboard.map((p, idx) => {
                 const val = metric === 'wins' ? p.wins : p.score;
                 const height = (val / maxVal) * 100;
-                const colors = ['bg-pink-400', 'bg-violet-400', 'bg-indigo-400', 'bg-blue-400', 'bg-cyan-400'];
+                const colors = isLowScoreWins 
+                    ? ['bg-[#a88b51]', 'bg-[#b12b4b]', 'bg-[#712b3f]', 'bg-[#444441]', 'bg-[#a3895a]']
+                    : ['bg-pink-400', 'bg-violet-400', 'bg-indigo-400', 'bg-blue-400', 'bg-cyan-400'];
                 return (
                   <div key={p.name} className="flex flex-col h-full min-w-[44px] flex-1 group">
                     <div className="flex-1 w-full flex flex-col justify-end items-center">
@@ -119,29 +165,51 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[1.5rem] transition-all group overflow-hidden border-magical-border hover:border-magical-accent active:scale-95" 
               onClick={onNewGame}
             >
-              <div className="w-14 h-14 rounded-full bg-magical-accent text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300">
+              <div className={`w-14 h-14 rounded-full ${isLowScoreWins ? 'bg-[var(--border)]' : 'bg-magical-accent'} text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300`}>
                 <span className="material-symbols-rounded text-2xl font-bold">add</span>
               </div>
-              <span className="text-xs font-bold text-magical-muted uppercase tracking-wider z-10">New Game</span>
+              <span className={`text-xs font-bold ${isLowScoreWins ? 'text-[var(--border)]' : 'text-magical-muted'} uppercase tracking-wider z-10`}>New Game</span>
             </button>
             {/* History Cards */}
             {games.map(g => {
               const d = new Date(g.id);
-              const totals = g.players.map(p => ({ n: p.name, s: p.scores.reduce((acc, val) => acc + (val || 0), 0), icon: p.icon })).sort((a, b) => b.s - a.s);
+              const totals = g.players.map(p => ({ 
+                  n: p.name, 
+                  s: p.scores.reduce((acc, val) => acc + (val || 0), 0), 
+                  icon: p.icon,
+                  rounds: p.scores.filter(s => s !== null).length 
+              }));
+              
+              if (isLowScoreWins) {
+                  totals.sort((a, b) => a.s - b.s); 
+              } else {
+                  totals.sort((a, b) => b.s - a.s); 
+              }
+              
               const leader = totals[0];
-              const isOver = leader.s >= g.targetScore;
+              const isOver = isLowScoreWins 
+                  ? leader.rounds === 13 
+                  : leader.s >= (g.targetScore || 200);
+
+              const progress = isLowScoreWins
+                  ? (leader.rounds / 13) * 100
+                  : (leader.s / (g.targetScore || 200)) * 100;
+                  
+              const labelRight = isLowScoreWins 
+                  ? `${leader.rounds}/13` 
+                  : `${leader.s}/${g.targetScore || 200}`;
+
               return (
-                <div key={g.id} onClick={() => onLoadGame(g.id)} className={`bg-magical-surface border rounded-[1.5rem] p-4 flex flex-col justify-between h-40 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-xl hover:border-magical-accent transition-all ${isOver ? 'border-magical-accent/40' : 'border-magical-border'}`}>
+                <div key={g.id} onClick={() => onLoadGame(g.id)} className={`bg-magical-surface border rounded-[1.5rem] p-4 flex flex-col justify-between h-40 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-xl ${isLowScoreWins ? 'border-[var(--border)] hover:shadow-xl' : `hover:border-magical-accent ${isOver ? 'border-magical-accent/40' : 'border-magical-border'}`} transition-all`}>
                     
                     {/* Delete Icon (Desktop only) */}
                     <button 
-                      className="absolute top-2 right-2 w-8 h-8 bg-magical-bg/90 backdrop-blur-sm rounded-full text-magical-muted hover:text-rose-500 hover:bg-white z-20 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center shadow-sm"
+                      className={`absolute top-2 right-2 w-8 h-8 rounded-full text-magical-muted z-20 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center ${isLowScoreWins ? 'hover:scale-110' : 'bg-magical-bg/90 backdrop-blur-sm hover:text-rose-500 hover:bg-white shadow-sm'}`}
                       onClick={(e) => { e.stopPropagation(); onPromptDelete('game', g.id, `Game on ${d.toLocaleDateString()}`); }}
                     >
                       <span className="material-symbols-rounded text-lg">close</span>
                     </button>
 
-                    {/* Centered Winner Icon / Ellipsis */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                         {isOver ? (
                           <span className="text-5xl filter-none drop-shadow-md transition-transform group-hover:scale-110">{leader.icon}</span>
@@ -159,10 +227,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="z-10 mt-2 relative">
                       <div className="flex justify-between items-end mb-2">
                         <span className="text-sm font-bold truncate max-w-[100px]">{leader.n}</span>
-                        <span className="text-[10px] font-mono text-magical-muted">{leader.s}/{g.targetScore}</span>
+                        <span className="text-[10px] font-mono text-magical-muted">{labelRight}</span>
                       </div>
-                      <div className="w-full bg-magical-bg h-2.5 rounded-full overflow-hidden border border-magical-border/50">
-                        <div className="bg-gradient-to-r from-pink-500 to-violet-500 h-full transition-all duration-500" style={{ width: `${Math.min(100, (leader.s / g.targetScore) * 100)}%` }}></div>
+                      <div className={`w-full bg-magical-bg h-2.5 rounded-full overflow-hidden ${isLowScoreWins ? '' : 'border border-magical-border/50'}`}>
+                        <div 
+                          className={`${isLowScoreWins ? 'bg-[#b18c58]' : 'bg-gradient-to-r from-pink-500 to-violet-500'} h-full transition-all duration-500`} 
+                          style={{ width: `${Math.min(100, progress)}%` }}
+                        ></div>
                       </div>
                     </div>
                 </div>
