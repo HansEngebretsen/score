@@ -102,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="relative group cursor-pointer" onClick={onLogoClick}>
             {!isLowScoreWins && <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-violet-500 rounded-3xl blur-[40px] opacity-40 animate-pulse"></div>}
             <div 
-              className={`relative ${isLowScoreWins ? 'w-[480px] h-[240px] max-w-[90vw]' : 'w-80 h-40'} bg-transparent flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500`}
+              className={`relative ${isLowScoreWins ? 'w-[480px] h-[240px] max-w-[90vw]' : 'w-96 h-48'} bg-transparent flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500`}
               style={isLowScoreWins ? { marginTop: '25px' } : {}}
             >
                <img 
@@ -165,13 +165,21 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="grid grid-cols-2 gap-3">
             {/* New Game Button */}
             <button 
-              className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[1.5rem] transition-all group overflow-hidden border-magical-border hover:border-magical-accent active:scale-95" 
+              className={`relative flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[1.5rem] transition-all group overflow-hidden active:scale-95 hover:bg-magical-surface/20 ${
+                !isLowScoreWins && theme === 'light' ? 'border-purple-200' : 'border-magical-border'
+              }`}
               onClick={onNewGame}
             >
-              <div className="w-14 h-14 rounded-full bg-[var(--border)] text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300">
+              <div className={`w-14 h-14 rounded-full text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300 ${
+                  !isLowScoreWins && theme === 'light' ? 'bg-purple-900' : 'bg-[var(--border)]'
+              }`}>
                 <span className="material-symbols-rounded text-2xl font-bold">add</span>
               </div>
-              <span className="text-xs font-bold text-[var(--border)] uppercase tracking-wider z-10">New Game</span>
+              <span className={`text-xs font-bold uppercase tracking-wider z-10 ${
+                  !isLowScoreWins 
+                    ? (theme === 'dark' ? 'text-white' : (theme === 'light' ? 'text-purple-900' : 'text-[var(--border)]')) 
+                    : 'text-[var(--border)]'
+              }`}>New Game</span>
             </button>
             {/* History Cards */}
             {games.map(g => {

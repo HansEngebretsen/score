@@ -204,8 +204,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
         >
           {/* Sticky Corner Cell */}
           <div 
-            className="sticky left-0 z-[60] border-b border-r-2 border-magical-border bg-magical-bg flex items-center justify-center shadow-[2px_2px_10px_rgba(0,0,0,0.1)]"
-            style={{ top: 'var(--nav-height)' }}
+                              className="sticky left-0 z-[60] border-b border-r-2 border-magical-border bg-magical-bg flex items-center justify-center"            style={{ top: 'var(--nav-height)' }}
           >
             <span className="text-xs font-mono text-magical-muted font-bold">#</span>
           </div>
