@@ -39,8 +39,8 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   const playerStats = useMemo(() => {
     const meta = game.players.map(p => ({ total: p.scores.reduce((a, b) => a + (b || 0), 0) }));
     
-    // Check if game has started (at least one score entered)
-    const hasGameStarted = game.players.some(p => p.scores.some(s => s !== null));
+    // Check if the FIRST ROW (index 0) is fully complete for ALL players
+    const firstRowComplete = game.players.every(p => p.scores[0] !== null);
 
     let bestTotal = -1;
     let nextBestTotal = -1;
@@ -60,9 +60,9 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
     return game.players.map((p, idx) => {
         const total = meta[idx].total;
         
-        // For Thirteen, require game start. For Flip 7, require > 0 total (existing logic).
+        // For Thirteen, require first row completion. For Flip 7, require > 0 total (existing logic).
         const isLeader = isThirteen 
-            ? (hasGameStarted && total === bestTotal)
+            ? (firstRowComplete && total === bestTotal)
             : (total === bestTotal && total > 0);
         
         let statusText = "";
@@ -260,7 +260,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                     <div className="text-center z-10 px-0.5 w-full header-footer-container">
                       <div className={`text-[0.65rem] md:text-xs font-bold font-mono tracking-tight uppercase ${
                           isThirteen
-                            ? (p.isLeader ? 'text-white' : 'text-[#444441]')
+                            ? (p.isLeader ? 'text-white' : 'text-[#712b3f]')
                             : (p.isWinning ? 'text-magical-text animate-pulse' : 'text-magical-muted')
                       } flex justify-center w-full gap-x-1 whitespace-nowrap overflow-hidden`}>
                          <span>{p.statusText}</span>
@@ -287,11 +287,11 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
               {game.players.map(p => {
                 const isFocused = focusedCell?.pId === p.id && focusedCell?.r === r;
                 return (
-                  <div key={`${p.id}-${r}`} className={`border-r border-b border-magical-border h-[var(--row-height)] transition-all ${isFocused ? (isThirteen ? 'bg-magical-surface/80 ring-2 ring-inset ring-[color:var(--highlight-winner)] z-[30]' : 'bg-magical-surface/80 ring-2 ring-inset ring-magical-accent z-[30]') : ''} ${activeRow === r && !isFocused ? 'bg-magical-surface/40' : 'bg-transparent'}`}>
+                  <div key={`${p.id}-${r}`} className={`border-r border-b border-magical-border h-[var(--row-height)] transition-all ${isFocused ? (isThirteen ? 'bg-magical-surface/80 ring-2 ring-inset ring-[color:var(--highlight-winner)] z-[30]' : 'bg-magical-surface/80 ring-2 ring-inset ring-magical-accent z-[30]') : ''} ${activeRow === r && !isFocused ? 'bg-magical-surface/40' : 'bg-transparent'} ${isThirteen && p.scores[r] === 0 ? 'bg-[#e3d6b2]' : ''}`}>
                     <input 
                       type="number" 
                       inputMode="numeric" 
-                      className={`w-full h-full bg-transparent text-center font-mono font-bold text-lg outline-none border-none focus:ring-0 transition-opacity ${p.scores[r] === 0 ? 'opacity-30' : ''}`} 
+                      className={`w-full h-full bg-transparent text-center font-mono font-bold text-lg outline-none border-none focus:ring-0 transition-opacity ${!isThirteen && p.scores[r] === 0 ? 'opacity-30' : ''}`} 
                       value={p.scores[r] ?? ''} 
                       placeholder="-" 
                       onFocus={() => { setActiveRow(r); setFocusedCell({ pId: p.id, r }); }} 
@@ -333,6 +333,14 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
             background-image: linear-gradient(180deg, rgba(244, 114, 182, 0.2) 0%, rgba(244, 114, 182, 0.08) 100%) !important;
             border-bottom-color: var(--border) !important;
         }
+        /* Border separator for adjacent winners in Thirteen */
+        .thirteen-mode .is-leader-header-alt + .is-leader-header-alt {
+            border-left: 1px solid white !important;
+        }
+        .thirteen-mode .is-leader-header-alt {
+             border-right: 1px solid white !important; /* Ensure visibility */
+        }
+
         .dark .is-leader-header-alt { 
           background-image: linear-gradient(180deg, rgba(244, 114, 182, 0.15) 0%, rgba(244, 114, 182, 0.05) 100%) !important; 
         }

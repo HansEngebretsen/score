@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppState, Game, Player, LeaderboardMetric, GameType } from './types';
 import { DB_KEY, getRandomEmoji } from './constants';
@@ -10,38 +9,69 @@ import GameSelectionModal from './components/GameSelectionModal';
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(DB_KEY);
-    const urlType = window.location.pathname === '/13' ? 'thirteen' : 'flip7';
-    
+    const path = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameIdParam = urlParams.get('id');
+
+    let initialView: 'dashboard' | 'game' = 'dashboard';
+    let initialGameType: GameType = 'flip7';
+    let initialGameId: number | null = null;
+    let initialShowSelector = false;
+
+    if (path === '/13') {
+        initialGameType = 'thirteen';
+    } else if (path === '/game' && gameIdParam) {
+        initialView = 'game';
+        initialGameId = parseInt(gameIdParam);
+        // We need to find the game type from saved data, defaulting to flip7 if not found yet
+    } else if (path === '/') {
+        initialShowSelector = true;
+    }
+
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Migration: Ensure games have a type and activeGameType is set
         const games = (parsed.games || []).map((g: any) => ({
            ...g,
            type: g.type || 'flip7',
-           targetScore: g.targetScore !== undefined ? g.targetScore : 200 // Ensure targetScore exists for old games
+           targetScore: g.targetScore !== undefined ? g.targetScore : 200
         }));
         
+        // If loading a game directly, find its type
+        if (initialView === 'game' && initialGameId) {
+            const game = games.find((g: Game) => g.id === initialGameId);
+            if (game) {
+                initialGameType = game.type;
+            } else {
+                // Game not found, redirect to dashboard
+                initialView = 'dashboard';
+                initialGameId = null;
+                window.history.replaceState({}, '', '/');
+                initialShowSelector = true;
+            }
+        }
+
         return { 
-          view: 'dashboard',
-          activeGameId: null,
           leaderboardMetric: 'wins',
           theme: 'dark',
           reorderEnabled: true,
           ...parsed,
-          activeGameType: urlType, // URL takes precedence on load
+          view: initialView,
+          activeGameId: initialGameId,
+          activeGameType: initialGameType,
           games
         };
       } catch (e) { console.error("Error loading state", e); }
     }
+    
     return {
-      view: 'dashboard',
-      activeGameId: null,
+      view: initialView,
+      activeGameId: initialGameId,
       leaderboardMetric: 'wins',
       theme: 'dark',
       games: [],
       reorderEnabled: true,
-      activeGameType: urlType
+      activeGameType: initialGameType
     };
   });
 
@@ -49,17 +79,44 @@ const App: React.FC = () => {
     type: null, id: null, name: ''
   });
 
-  const [showGameSelector, setShowGameSelector] = useState(false);
+  const [showGameSelector, setShowGameSelector] = useState(() => {
+      return window.location.pathname === '/';
+  });
 
   // Handle Browser Navigation
   useEffect(() => {
       const handlePopState = () => {
-          const type = window.location.pathname === '/13' ? 'thirteen' : 'flip7';
-          setState(prev => ({ ...prev, activeGameType: type }));
+          const path = window.location.pathname;
+          const urlParams = new URLSearchParams(window.location.search);
+          const gameIdParam = urlParams.get('id');
+
+          if (path === '/game' && gameIdParam) {
+              const id = parseInt(gameIdParam);
+              const game = state.games.find(g => g.id === id);
+              if (game) {
+                  setState(prev => ({ ...prev, view: 'game', activeGameId: id, activeGameType: game.type }));
+                  setShowGameSelector(false);
+              } else {
+                  // Game not found
+                  window.history.replaceState({}, '', '/');
+                  setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' }));
+                  setShowGameSelector(true);
+              }
+          } else if (path === '/13') {
+              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'thirteen' }));
+              setShowGameSelector(false);
+          } else if (path === '/flip7') {
+              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' }));
+              setShowGameSelector(false);
+          } else {
+              // Root /
+              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' }));
+              setShowGameSelector(true);
+          }
       };
       window.addEventListener('popstate', handlePopState);
       return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [state.games]);
 
   useEffect(() => {
     const isThirteen = state.activeGameType === 'thirteen';
@@ -90,8 +147,7 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, activeGameType: type }));
     setShowGameSelector(false);
     
-    // Update URL
-    const path = type === 'thirteen' ? '/13' : '/';
+    const path = type === 'thirteen' ? '/13' : '/flip7';
     window.history.pushState({}, '', path);
   }, []);
 
@@ -100,7 +156,6 @@ const App: React.FC = () => {
   }, []);
 
   const createNewGame = useCallback(() => {
-    // Find last game of the SAME type to copy players
     const lastGame = state.games.find(g => g.type === state.activeGameType);
     let newPlayers: Player[] = [];
     const isThirteen = state.activeGameType === 'thirteen';
@@ -136,15 +191,24 @@ const App: React.FC = () => {
       activeGameId: newGame.id,
       view: 'game'
     }));
+    
+    window.history.pushState({}, '', `/game?id=${newGame.id}`);
   }, [state.games, state.reorderEnabled, state.activeGameType]);
 
   const loadGame = useCallback((id: number) => {
-    setState(prev => ({ ...prev, activeGameId: id, view: 'game' }));
-  }, []);
+    // Find game to determine type
+    const game = state.games.find(g => g.id === id);
+    if (game) {
+        setState(prev => ({ ...prev, activeGameId: id, view: 'game', activeGameType: game.type }));
+        window.history.pushState({}, '', `/game?id=${id}`);
+    }
+  }, [state.games]);
 
   const goToDashboard = useCallback(() => {
     setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null }));
-  }, []);
+    const path = state.activeGameType === 'thirteen' ? '/13' : '/flip7';
+    window.history.pushState({}, '', path);
+  }, [state.activeGameType]);
 
   const updateGameState = useCallback((updatedGame: Game) => {
     setState(prev => ({
@@ -159,12 +223,19 @@ const App: React.FC = () => {
 
   const confirmDelete = useCallback(() => {
     if (deleteContext.type === 'game') {
-      setState(prev => ({
-        ...prev,
-        games: prev.games.filter(g => g.id !== deleteContext.id),
-        view: prev.activeGameId === deleteContext.id ? 'dashboard' : prev.view,
-        activeGameId: prev.activeGameId === deleteContext.id ? null : prev.activeGameId
-      }));
+      setState(prev => {
+          const nextState = {
+            ...prev,
+            games: prev.games.filter(g => g.id !== deleteContext.id),
+            view: prev.activeGameId === deleteContext.id ? 'dashboard' : prev.view,
+            activeGameId: prev.activeGameId === deleteContext.id ? null : prev.activeGameId
+          };
+          if (prev.activeGameId === deleteContext.id) {
+              const path = prev.activeGameType === 'thirteen' ? '/13' : '/flip7';
+              window.history.pushState({}, '', path);
+          }
+          return nextState;
+      });
     } else if (deleteContext.type === 'player') {
       setState(prev => {
         const activeGame = prev.games.find(g => g.id === prev.activeGameId);

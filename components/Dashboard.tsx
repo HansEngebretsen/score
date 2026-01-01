@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Game, LeaderboardMetric, Theme, GameType } from '../types';
 import { LOGO_URL, THIRTEEN_LOGO_LARGE } from '../constants';
@@ -111,7 +110,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                />
             </div>
           </div>
-          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.4em] mt-8 opacity-60">Score Keeper</p>
+          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.2em] mt-8 opacity-60">
+            {isLowScoreWins ? "triples and straights with the deck as wilds" : "Claim the throne of glory by flipping all 7"}
+          </p>
         </div>
 
         {/* Leaderboard Section */}
@@ -165,10 +166,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[1.5rem] transition-all group overflow-hidden border-magical-border hover:border-magical-accent active:scale-95" 
               onClick={onNewGame}
             >
-              <div className={`w-14 h-14 rounded-full ${isLowScoreWins ? 'bg-[var(--border)]' : 'bg-magical-accent'} text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300`}>
+              <div className="w-14 h-14 rounded-full bg-[var(--border)] text-white group-hover:scale-110 flex items-center justify-center shadow-lg mb-3 z-10 transition-all duration-300">
                 <span className="material-symbols-rounded text-2xl font-bold">add</span>
               </div>
-              <span className={`text-xs font-bold ${isLowScoreWins ? 'text-[var(--border)]' : 'text-magical-muted'} uppercase tracking-wider z-10`}>New Game</span>
+              <span className="text-xs font-bold text-[var(--border)] uppercase tracking-wider z-10">New Game</span>
             </button>
             {/* History Cards */}
             {games.map(g => {
@@ -200,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   : `${leader.s}/${g.targetScore || 200}`;
 
               return (
-                <div key={g.id} onClick={() => onLoadGame(g.id)} className={`bg-magical-surface border rounded-[1.5rem] p-4 flex flex-col justify-between h-40 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-xl ${isLowScoreWins ? 'border-[var(--border)] hover:shadow-xl' : `hover:border-magical-accent ${isOver ? 'border-magical-accent/40' : 'border-magical-border'}`} transition-all`}>
+                <div key={g.id} onClick={() => onLoadGame(g.id)} className={`bg-magical-surface border rounded-[1.5rem] p-4 flex flex-col justify-between h-40 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-xl ${isLowScoreWins ? 'border-[var(--border)]' : 'border-[#7c3aed]'} transition-all`}>
                     
                     {/* Delete Icon (Desktop only) */}
                     <button 
@@ -229,7 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <span className="text-sm font-bold truncate max-w-[100px]">{leader.n}</span>
                         <span className="text-[10px] font-mono text-magical-muted">{labelRight}</span>
                       </div>
-                      <div className={`w-full bg-magical-bg h-2.5 rounded-full overflow-hidden ${isLowScoreWins ? '' : 'border border-magical-border/50'}`}>
+                      <div className="w-full bg-magical-bg h-2.5 rounded-full overflow-hidden">
                         <div 
                           className={`${isLowScoreWins ? 'bg-[#b18c58]' : 'bg-gradient-to-r from-pink-500 to-violet-500'} h-full transition-all duration-500`} 
                           style={{ width: `${Math.min(100, progress)}%` }}

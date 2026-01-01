@@ -19,9 +19,9 @@ const GameSelectionModal: React.FC<GameSelectionModalProps> = ({ activeType, onS
             onClick={() => onSelect('flip7')}
             className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all group ${activeType === 'flip7' ? 'border-magical-accent bg-magical-surface2' : 'border-magical-border bg-transparent hover:border-magical-muted'}`}
           >
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start text-left">
               <span className={`text-lg font-bold ${activeType === 'flip7' ? 'text-magical-accent' : 'text-magical-text'}`}>Flip 7</span>
-              <span className="text-xs text-magical-muted">Race to 200 (High Score)</span>
+              <span className="text-xs text-magical-muted text-left">Claim the throne of glory by flipping all 7</span>
             </div>
             {activeType === 'flip7' && <span className="material-symbols-rounded text-magical-accent text-2xl">check_circle</span>}
           </button>
@@ -30,9 +30,9 @@ const GameSelectionModal: React.FC<GameSelectionModalProps> = ({ activeType, onS
             onClick={() => onSelect('thirteen')}
             className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all group ${activeType === 'thirteen' ? 'border-white bg-magical-surface2' : 'border-magical-border bg-transparent hover:border-magical-muted'}`}
           >
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start text-left">
               <span className={`text-lg font-bold ${activeType === 'thirteen' ? 'text-white' : 'text-magical-text'}`}>Thirteen</span>
-              <span className={`text-xs ${activeType === 'thirteen' ? 'text-white/80' : 'text-magical-muted'}`}>Race to Bottom (Low Score)</span>
+              <span className={`text-xs ${activeType === 'thirteen' ? 'text-white/80' : 'text-magical-muted'} text-left`}>triples and straights with the deck as wilds</span>
             </div>
             {activeType === 'thirteen' && <span className="material-symbols-rounded text-white text-2xl">check_circle</span>}
           </button>
