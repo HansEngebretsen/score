@@ -213,9 +213,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               return (
                 <div key={g.id} onClick={() => onLoadGame(g.id)} className={`bg-magical-surface border rounded-[1.5rem] p-4 flex flex-col justify-between h-40 cursor-pointer relative overflow-hidden group shadow-sm hover:shadow-xl ${isLowScoreWins ? 'border-[var(--border)]' : 'border-[#7c3aed]'} transition-all`}>
                     
-                    {/* Delete Icon (Desktop only) */}
+                    {/* Delete Icon */}
                     <button 
-                      className={`absolute top-2 right-2 w-8 h-8 rounded-full text-magical-muted z-20 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center ${isLowScoreWins ? 'hover:scale-110' : 'bg-magical-bg/90 backdrop-blur-sm hover:text-rose-500 hover:bg-white shadow-sm'}`}
+                      className={`absolute top-2 right-2 w-8 h-8 rounded-full text-magical-muted z-20 transition-opacity flex items-center justify-center ${isLowScoreWins ? 'hover:scale-110' : 'bg-magical-bg/90 backdrop-blur-sm hover:text-rose-500 hover:bg-white shadow-sm'}`}
                       onClick={(e) => { e.stopPropagation(); onPromptDelete('game', g.id, `Game on ${d.toLocaleDateString()}`); }}
                     >
                       <span className="material-symbols-rounded text-lg">close</span>

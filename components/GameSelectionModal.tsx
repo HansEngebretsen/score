@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { GameType } from '../types';
 import { LOGO_URL, THIRTEEN_LOGO_LARGE } from '../constants';
@@ -18,35 +19,25 @@ const GameSelectionModal: React.FC<GameSelectionModalProps> = ({ activeType, onS
         {/* Flip 7 Half */}
         <button 
           onClick={() => onSelect('flip7')}
-          className="relative w-full h-48 bg-[#2e1065] flex items-center justify-center p-8 transition-transform active:scale-95 hover:brightness-110"
+          className="relative w-full h-48 bg-[#2e1065] flex items-center justify-center p-8 transition-all hover:brightness-110 group"
         >
           <img 
             src={LOGO_URL} 
             alt="Flip 7" 
-            className="w-full h-full object-contain drop-shadow-2xl"
+            className="w-full h-full object-contain drop-shadow-2xl transition-transform active:scale-95 group-hover:scale-105"
           />
-          {activeType === 'flip7' && (
-             <div className="absolute top-4 right-4 bg-white/20 p-1 rounded-full backdrop-blur-sm">
-                <span className="material-symbols-rounded text-white text-xl">check</span>
-             </div>
-          )}
         </button>
 
         {/* 13 Half */}
         <button 
           onClick={() => onSelect('thirteen')}
-          className="relative w-full h-48 bg-[#f1e7ca] flex items-center justify-center p-8 transition-transform active:scale-95 hover:brightness-95"
+          className="relative w-full h-48 bg-[#f1e7ca] flex items-center justify-center p-8 transition-all hover:brightness-95 group"
         >
            <img 
             src={THIRTEEN_LOGO_LARGE} 
             alt="Thirteen" 
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain transition-transform active:scale-95 group-hover:scale-105"
           />
-           {activeType === 'thirteen' && (
-             <div className="absolute top-4 right-4 bg-black/10 p-1 rounded-full backdrop-blur-sm">
-                <span className="material-symbols-rounded text-[#444441] text-xl">check</span>
-             </div>
-          )}
         </button>
       </div>
     </div>
