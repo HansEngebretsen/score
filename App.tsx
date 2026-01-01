@@ -277,7 +277,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-[-1]">
         {state.activeGameType !== 'thirteen' && (
           <>
             <div className="absolute top-48 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>

@@ -200,7 +200,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
             width: 'fit-content',
             minWidth: '100%', 
           } as any} 
-          className={`px-[var(--safe-left)] pr-[var(--safe-right)] ${isThirteen ? 'no-overscroll' : ''}`}
+          className={`px-[var(--safe-left)] pr-[var(--safe-right)] no-overscroll`}
         >
           {/* Sticky Corner Cell */}
           <div 
