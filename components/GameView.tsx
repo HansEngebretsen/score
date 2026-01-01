@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Game, Player } from '../types';
 import { LOGO_URL, getRandomEmoji, THIRTEEN_LABELS, THIRTEEN_LOGO_SMALL } from '../constants';
@@ -17,6 +18,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   const prevPlayerCount = useRef(game.players.length);
 
   const isThirteen = game.type === 'thirteen';
+  const isCrowded = game.players.length > 4;
 
   // Auto-scroll to the end when a new player is added
   useEffect(() => {
@@ -239,7 +241,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                     <div className="flex flex-col items-start gap-0 cursor-pointer z-10 pl-1" onClick={() => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, icon: getRandomEmoji() } : pl) })}>
                       <div className="text-xl sm:text-2xl emoji-font leading-none group-hover:scale-110 transition-transform origin-left drop-shadow-sm mb-0.5">{p.icon}</div>
                       <input 
-                        className={`bg-transparent w-full min-w-0 font-bold text-sm outline-none p-0 text-left truncate tracking-tight transition-colors ${
+                        className={`bg-transparent w-full min-w-0 font-bold outline-none p-0 text-left truncate tracking-tight transition-colors ${isCrowded ? 'text-xs' : 'text-sm'} ${
                             isThirteen 
                                 ? (p.isLeader ? 'text-white' : 'text-[#444441]') 
                                 : (p.isLeader ? 'text-magical-text' : 'text-magical-muted focus:text-magical-text')
@@ -251,7 +253,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                       />
                     </div>
                     <div className="text-center z-10 mt-0.5">
-                      <div className={`text-2xl sm:text-3xl font-bold tracking-tighter leading-none ${
+                      <div className={`font-bold tracking-tighter leading-none ${isCrowded ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-3xl'} ${
                           isThirteen 
                             ? (p.isLeader ? 'text-white' : 'text-[#444441]')
                             : (p.isLeader ? 'text-magical-accent' : 'text-magical-text')
@@ -277,7 +279,8 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
           {Array.from({ length: game.roundCount }).map((_, r) => (
             <React.Fragment key={r}>
               <div 
-                className={`sticky left-0 z-[40] border-r-2 border-b border-magical-border bg-magical-bg flex items-center justify-center font-bold font-mono text-xs transition-colors duration-300
+                className={`sticky left-0 z-[40] border-r-2 border-b border-magical-border bg-magical-bg flex items-center justify-center font-bold font-mono transition-colors duration-300
+                    ${isCrowded ? 'text-[0.65rem]' : 'text-xs'}
                     ${activeRow === r ? (isThirteen ? 'text-magical-muted' : 'text-magical-accent') : 'text-magical-muted'}
                     ${isThirteen && r === nextActiveRow ? 'bg-[#e3d6b2]' : ''}
                 `}
@@ -291,7 +294,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                     <input 
                       type="number" 
                       inputMode="numeric" 
-                      className={`w-full h-full bg-transparent text-center font-mono font-bold text-lg outline-none border-none focus:ring-0 transition-opacity ${!isThirteen && p.scores[r] === 0 ? 'opacity-30' : ''}`} 
+                      className={`w-full h-full bg-transparent text-center font-mono font-bold outline-none border-none focus:ring-0 transition-opacity ${isCrowded ? 'text-base' : 'text-lg'} ${!isThirteen && p.scores[r] === 0 ? 'opacity-30' : ''}`} 
                       value={p.scores[r] ?? ''} 
                       placeholder="-" 
                       onFocus={() => { setActiveRow(r); setFocusedCell({ pId: p.id, r }); }} 
@@ -354,6 +357,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
         .thirteen-mode .is-leader-header-alt .text-magical-text,
         .thirteen-mode .is-leader-header-alt .text-magical-accent,
         .thirteen-mode .is-leader-header-alt .text-2xl,
+        .thirteen-mode .is-leader-header-alt .text-xl,
         .thirteen-mode .is-leader-header-alt .text-[0.65rem] {
              color: #ffffff !important;
         }

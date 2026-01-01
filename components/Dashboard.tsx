@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Game, LeaderboardMetric, Theme, GameType } from '../types';
 import { LOGO_URL, THIRTEEN_LOGO_LARGE } from '../constants';
@@ -80,7 +81,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const maxVal = useMemo(() => {
     if (leaderboard.length === 0) return 1;
-    return Math.max(...leaderboard.map(p => metric === 'wins' ? p.wins : p.score));
+    // Ensure maxVal is at least 1 to avoid division by zero
+    return Math.max(1, ...leaderboard.map(p => metric === 'wins' ? p.wins : p.score));
   }, [leaderboard, metric]);
 
   return (

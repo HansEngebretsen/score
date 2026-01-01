@@ -268,6 +268,7 @@ const App: React.FC = () => {
       <div className="relative z-10 flex flex-col flex-1">
         {state.view === 'dashboard' ? (
           <Dashboard 
+            key={state.activeGameType}
             games={displayedGames} 
             activeGameType={state.activeGameType}
             metric={state.leaderboardMetric} 
