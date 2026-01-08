@@ -121,18 +121,18 @@ const Dashboard: React.FC<DashboardProps> = ({
             />
           </div>
         </div>
-        <div className="flex items-center justify-center gap-3 mt-8">
-          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.2em] ">
-            {isLowScoreWins ? "Kings to Aces, shifting wilds, race to zero." : "Claim the throne of glory by flipping all 7"}
+        <div className="flex items-center justify-center mt-8 px-6">
+          <p className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.2em] text-center leading-relaxed">
+            {isLowScoreWins ? "Kings to Aces, shifting wilds, race to zero. " : "Claim the throne of glory by flipping all 7"}
+            {isLowScoreWins && (
+              <button
+                onClick={onShowHowToPlay}
+                className="inline hover:opacity-100 hover:text-magical-accent transition-all underline"
+              >
+                how to play
+              </button>
+            )}
           </p>
-          {isLowScoreWins && (
-            <button
-              onClick={onShowHowToPlay}
-              className="text-[10px] font-bold text-magical-muted uppercase tracking-[0.2em] hover:opacity-100 hover:text-magical-accent transition-all underline"
-            >
-              how to play
-            </button>
-          )}
         </div>
       </div>
 
@@ -177,7 +177,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* History Section */}
-      <div class="p-4 space-y-10 px-[calc(1rem+var(--safe-left))] pr-[calc(1rem+var(--safe-right))]">
+      <div className="p-4 space-y-10 px-[calc(1rem+var(--safe-left))] pr-[calc(1rem+var(--safe-right))]">
         <h2 className="text-xs font-bold text-magical-muted uppercase tracking-widest mb-4 px-2 pl-0 flex items-center gap-2">
           <span className="material-symbols-rounded text-base">history</span> History
         </h2>

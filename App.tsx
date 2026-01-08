@@ -352,7 +352,7 @@ const App: React.FC = () => {
           className="flex flex-col items-center gap-1.5 hover:opacity-100 transition-opacity group"
         >
           <img
-            src="/img/hans-logo.svg"
+            src="./img/hans-logo.svg"
             alt="Hans Logo"
             className="w-6 h-6 opacity-40 transition-opacity group-hover:opacity-60"
             style={{
