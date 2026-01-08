@@ -6,12 +6,14 @@ import Dashboard from './components/Dashboard';
 import GameView from './components/GameView';
 import DeleteModal from './components/DeleteModal';
 import GameSelectionModal from './components/GameSelectionModal';
+import HowToPlayModal from './components/HowToPlayModal';
+import Toast from './components/Toast';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(DB_KEY);
     const hash = window.location.hash;
-    
+
     // Hash Routing Parsing
     let initialView: 'dashboard' | 'game' = 'dashboard';
     let initialGameType: GameType = 'flip7';
@@ -19,48 +21,50 @@ const App: React.FC = () => {
     let initialShowSelector = false;
 
     if (hash === '#/13') {
-        initialGameType = 'thirteen';
+      initialGameType = 'thirteen';
     } else if (hash === '#/flip7') {
-        initialGameType = 'flip7';
+      initialGameType = 'flip7';
     } else if (hash.startsWith('#/game')) {
-        const urlParams = new URLSearchParams(hash.split('?')[1]);
-        const gameIdParam = urlParams.get('id');
-        if (gameIdParam) {
-            initialView = 'game';
-            initialGameId = parseInt(gameIdParam);
-        } else {
-            // Invalid game hash, fallback
-            initialShowSelector = true;
-        }
-    } else {
-        // Root or unknown hash
+      const urlParams = new URLSearchParams(hash.split('?')[1]);
+      const gameIdParam = urlParams.get('id');
+      if (gameIdParam) {
+        initialView = 'game';
+        initialGameId = parseInt(gameIdParam);
+      } else {
+        // Invalid game hash, fallback
         initialShowSelector = true;
+      }
+    } else {
+      // Root or unknown hash
+      initialShowSelector = true;
     }
+
+    let initialState: AppState;
 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         const games = (parsed.games || []).map((g: any) => ({
-           ...g,
-           type: g.type || 'flip7',
-           targetScore: g.targetScore !== undefined ? g.targetScore : 200
+          ...g,
+          type: g.type || 'flip7',
+          targetScore: g.targetScore !== undefined ? g.targetScore : 200
         }));
-        
+
         // If loading a game directly, find its type
         if (initialView === 'game' && initialGameId) {
-            const game = games.find((g: Game) => g.id === initialGameId);
-            if (game) {
-                initialGameType = game.type;
-            } else {
-                // Game not found, redirect to dashboard
-                initialView = 'dashboard';
-                initialGameId = null;
-                window.location.hash = '#/';
-                initialShowSelector = true;
-            }
+          const game = games.find((g: Game) => g.id === initialGameId);
+          if (game) {
+            initialGameType = game.type;
+          } else {
+            // Game not found, redirect to dashboard
+            initialView = 'dashboard';
+            initialGameId = null;
+            window.location.hash = '#/';
+            initialShowSelector = true;
+          }
         }
 
-        return { 
+        initialState = {
           leaderboardMetric: 'wins',
           theme: 'dark',
           reorderEnabled: true,
@@ -70,69 +74,92 @@ const App: React.FC = () => {
           activeGameType: initialGameType,
           games
         };
-      } catch (e) { console.error("Error loading state", e); }
+      } catch (e) {
+        console.error("Error loading state", e);
+        initialState = {
+          view: initialView,
+          activeGameId: initialGameId,
+          leaderboardMetric: 'wins',
+          theme: 'dark',
+          games: [],
+          reorderEnabled: true,
+          activeGameType: initialGameType
+        };
+      }
+    } else {
+      initialState = {
+        view: initialView,
+        activeGameId: initialGameId,
+        leaderboardMetric: 'wins',
+        theme: 'dark',
+        games: [],
+        reorderEnabled: true,
+        activeGameType: initialGameType
+      };
     }
-    
-    return {
-      view: initialView,
-      activeGameId: initialGameId,
-      leaderboardMetric: 'wins',
-      theme: 'dark',
-      games: [],
-      reorderEnabled: true,
-      activeGameType: initialGameType
-    };
+
+    // Apply theme classes synchronously to prevent FOUC
+    const isThirteen = initialState.activeGameType === 'thirteen';
+    const isDark = initialState.theme === 'dark';
+
+    document.documentElement.classList.toggle('thirteen-mode', isThirteen);
+    document.documentElement.classList.toggle('dark', !isThirteen && isDark);
+
+    return initialState;
   });
 
   const [deleteContext, setDeleteContext] = useState<{ type: 'game' | 'player' | null; id: string | number | null; name: string }>({
     type: null, id: null, name: ''
   });
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+
   const [showGameSelector, setShowGameSelector] = useState(() => {
-      // Show selector if hash is empty or just #/
-      return window.location.hash === '' || window.location.hash === '#/';
+    // Show selector if hash is empty or just #/
+    return window.location.hash === '' || window.location.hash === '#/';
   });
 
   // Handle Hash Navigation
   useEffect(() => {
-      const handleHashChange = () => {
-          const hash = window.location.hash;
-          
-          if (hash.startsWith('#/game')) {
-              const urlParams = new URLSearchParams(hash.split('?')[1]);
-              const gameIdParam = urlParams.get('id');
-              if (gameIdParam) {
-                  const id = parseInt(gameIdParam);
-                  const game = state.games.find(g => g.id === id);
-                  if (game) {
-                      setState(prev => ({ ...prev, view: 'game', activeGameId: id, activeGameType: game.type }));
-                      setShowGameSelector(false);
-                  } else {
-                      // Game not found
-                      window.location.hash = '#/';
-                  }
-              }
-          } else if (hash === '#/13') {
-              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'thirteen' }));
-              setShowGameSelector(false);
-          } else if (hash === '#/flip7') {
-              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' }));
-              setShowGameSelector(false);
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+
+      if (hash.startsWith('#/game')) {
+        const urlParams = new URLSearchParams(hash.split('?')[1]);
+        const gameIdParam = urlParams.get('id');
+        if (gameIdParam) {
+          const id = parseInt(gameIdParam);
+          const game = state.games.find(g => g.id === id);
+          if (game) {
+            setState(prev => ({ ...prev, view: 'game', activeGameId: id, activeGameType: game.type }));
+            setShowGameSelector(false);
           } else {
-              // Root or Selector
-              setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' })); // Default underlying type
-              setShowGameSelector(true);
+            // Game not found
+            window.location.hash = '#/';
           }
-      };
-      
-      window.addEventListener('hashchange', handleHashChange);
-      return () => window.removeEventListener('hashchange', handleHashChange);
+        }
+      } else if (hash === '#/13') {
+        setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'thirteen' }));
+        setShowGameSelector(false);
+      } else if (hash === '#/flip7') {
+        setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' }));
+        setShowGameSelector(false);
+      } else {
+        // Root or Selector
+        setState(prev => ({ ...prev, view: 'dashboard', activeGameId: null, activeGameType: 'flip7' })); // Default underlying type
+        setShowGameSelector(true);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, [state.games]);
 
   useEffect(() => {
     const isThirteen = state.activeGameType === 'thirteen';
     const isDark = state.theme === 'dark';
-    
+
     // 1. Toggle Global Classes
     document.documentElement.classList.toggle('thirteen-mode', isThirteen);
     document.documentElement.classList.toggle('dark', !isThirteen && isDark);
@@ -142,19 +169,19 @@ const App: React.FC = () => {
     let colorScheme = 'light';
 
     if (isThirteen) {
-        themeColor = '#f1e7ca';
-        colorScheme = 'light';
+      themeColor = '#f1e7ca';
+      colorScheme = 'light';
     } else {
-        themeColor = isDark ? '#2e1065' : '#fdf4ff';
-        colorScheme = isDark ? 'dark' : 'light';
+      themeColor = isDark ? '#2e1065' : '#fdf4ff';
+      colorScheme = isDark ? 'dark' : 'light';
     }
 
     // 3. Apply Scheme & Meta
     document.documentElement.style.colorScheme = colorScheme;
-    
+
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (themeColorMeta) {
-        themeColorMeta.setAttribute('content', themeColor);
+      themeColorMeta.setAttribute('content', themeColor);
     }
 
   }, [state.theme, state.activeGameType]);
@@ -168,7 +195,7 @@ const App: React.FC = () => {
   const switchGameType = useCallback((type: GameType) => {
     setState(prev => ({ ...prev, activeGameType: type }));
     setShowGameSelector(false);
-    
+
     const hash = type === 'thirteen' ? '#/13' : '#/flip7';
     window.location.hash = hash;
   }, []);
@@ -213,7 +240,7 @@ const App: React.FC = () => {
       activeGameId: newGame.id,
       view: 'game'
     }));
-    
+
     window.location.hash = `#/game?id=${newGame.id}`;
   }, [state.games, state.reorderEnabled, state.activeGameType]);
 
@@ -221,8 +248,8 @@ const App: React.FC = () => {
     // Find game to determine type
     const game = state.games.find(g => g.id === id);
     if (game) {
-        setState(prev => ({ ...prev, activeGameId: id, view: 'game', activeGameType: game.type }));
-        window.location.hash = `#/game?id=${id}`;
+      setState(prev => ({ ...prev, activeGameId: id, view: 'game', activeGameType: game.type }));
+      window.location.hash = `#/game?id=${id}`;
     }
   }, [state.games]);
 
@@ -244,20 +271,24 @@ const App: React.FC = () => {
   }, []);
 
   const confirmDelete = useCallback(() => {
+    const wasGameDeletion = deleteContext.type === 'game';
+
     if (deleteContext.type === 'game') {
       setState(prev => {
-          const nextState = {
-            ...prev,
-            games: prev.games.filter(g => g.id !== deleteContext.id),
-            view: prev.activeGameId === deleteContext.id ? 'dashboard' : prev.view,
-            activeGameId: prev.activeGameId === deleteContext.id ? null : prev.activeGameId
-          };
-          if (prev.activeGameId === deleteContext.id) {
-              const hash = prev.activeGameType === 'thirteen' ? '#/13' : '#/flip7';
-              window.location.hash = hash;
-          }
-          return nextState;
+        const nextState = {
+          ...prev,
+          games: prev.games.filter(g => g.id !== deleteContext.id),
+          view: prev.activeGameId === deleteContext.id ? 'dashboard' : prev.view,
+          activeGameId: prev.activeGameId === deleteContext.id ? null : prev.activeGameId
+        };
+        if (prev.activeGameId === deleteContext.id) {
+          const hash = prev.activeGameType === 'thirteen' ? '#/13' : '#/flip7';
+          window.location.hash = hash;
+        }
+        return nextState;
       });
+      // Show toast only for game deletions
+      setToastMessage('Game deleted');
     } else if (deleteContext.type === 'player') {
       setState(prev => {
         const activeGame = prev.games.find(g => g.id === prev.activeGameId);
@@ -289,34 +320,77 @@ const App: React.FC = () => {
 
       <div className="relative z-10 flex flex-col flex-1">
         {state.view === 'dashboard' ? (
-          <Dashboard 
+          <Dashboard
             key={state.activeGameType}
-            games={displayedGames} 
+            games={displayedGames}
             activeGameType={state.activeGameType}
-            metric={state.leaderboardMetric} 
-            setMetric={setMetric} 
-            onNewGame={createNewGame} 
-            onLoadGame={loadGame} 
-            onPromptDelete={promptDelete} 
-            theme={state.theme} 
+            metric={state.leaderboardMetric}
+            setMetric={setMetric}
+            onNewGame={createNewGame}
+            onLoadGame={loadGame}
+            onPromptDelete={promptDelete}
+            theme={state.theme}
             onToggleTheme={toggleTheme}
             onLogoClick={() => setShowGameSelector(true)}
+            onShowHowToPlay={() => setShowHowToPlay(true)}
           />
         ) : activeGame ? (
           <GameView game={activeGame} onGoBack={goToDashboard} onUpdate={updateGameState} onPromptDelete={promptDelete} />
         ) : (
           <div className="flex-1 flex items-center justify-center p-12">
-              <button onClick={goToDashboard} className="px-8 py-4 bg-magical-accent text-white rounded-2xl font-bold shadow-xl">Back to Dashboard</button>
+            <button onClick={goToDashboard} className="px-8 py-4 bg-magical-accent text-white rounded-2xl font-bold shadow-xl">Back to Dashboard</button>
           </div>
         )}
       </div>
 
+      {/* Footer Attribution */}
+      <footer className="pb-[var(--safe-bottom)] pt-8 px-4 mt-auto">
+        <a
+          href="https://haaans.com/about/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1.5 hover:opacity-100 transition-opacity group"
+        >
+          <img
+            src="/img/hans-logo.svg"
+            alt="Hans Logo"
+            className="w-6 h-6 opacity-40 transition-opacity group-hover:opacity-60"
+            style={{
+              filter: state.activeGameType === 'thirteen' || state.theme === 'light'
+                ? 'invert(0)'
+                : 'invert(1)'
+            }}
+          />
+          <p className="text-[0.65rem] font-medium opacity-30 tracking-wide group-hover:opacity-50 transition-opacity"
+            style={{
+              color: state.activeGameType === 'thirteen' || state.theme === 'light'
+                ? '#444441'
+                : '#ffffff'
+            }}>
+            made by hans
+          </p>
+        </a>
+      </footer>
+
       {deleteContext.type && (
-        <DeleteModal type={deleteContext.type} name={deleteContext.name} onConfirm={confirmDelete} onCancel={() => setDeleteContext({ type: null, id: null, name: '' })} />
+        <DeleteModal
+          type={deleteContext.type}
+          name={deleteContext.name}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteContext({ type: null, id: null, name: '' })}
+        />
       )}
 
       {showGameSelector && (
         <GameSelectionModal activeType={state.activeGameType} onSelect={switchGameType} onClose={() => setShowGameSelector(false)} />
+      )}
+
+      {showHowToPlay && (
+        <HowToPlayModal onClose={() => setShowHowToPlay(false)} />
+      )}
+
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
     </div>
   );

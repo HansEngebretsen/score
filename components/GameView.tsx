@@ -31,16 +31,16 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   }, [game.players.length]);
 
   const nextActiveRow = useMemo(() => {
-      // Find the first row where ANY player has a null score
-      const idx = Array.from({ length: game.roundCount }).findIndex((_, r) => 
-          game.players.some(p => p.scores[r] === null)
-      );
-      return idx === -1 ? null : idx;
+    // Find the first row where ANY player has a null score
+    const idx = Array.from({ length: game.roundCount }).findIndex((_, r) =>
+      game.players.some(p => p.scores[r] === null)
+    );
+    return idx === -1 ? null : idx;
   }, [game.players, game.roundCount]);
 
   const playerStats = useMemo(() => {
     const meta = game.players.map(p => ({ total: p.scores.reduce((a, b) => a + (b || 0), 0) }));
-    
+
     // Check if the FIRST ROW (index 0) is fully complete for ALL players
     const firstRowComplete = game.players.every(p => p.scores[0] !== null);
 
@@ -48,57 +48,57 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
     let nextBestTotal = -1;
 
     const totals = meta.map(m => m.total);
-    
+
     if (isThirteen) {
-        // Low score wins
-        bestTotal = Math.min(...totals);
-        const sorted = [...totals].sort((a, b) => a - b);
-        nextBestTotal = sorted[1] ?? bestTotal;
+      // Low score wins
+      bestTotal = Math.min(...totals);
+      const sorted = [...totals].sort((a, b) => a - b);
+      nextBestTotal = sorted[1] ?? bestTotal;
     } else {
-        // High score wins
-        bestTotal = Math.max(...totals);
+      // High score wins
+      bestTotal = Math.max(...totals);
     }
 
     return game.players.map((p, idx) => {
-        const total = meta[idx].total;
-        
-        // For Thirteen, require first row completion. For Flip 7, require > 0 total (existing logic).
-        const isLeader = isThirteen 
-            ? (firstRowComplete && total === bestTotal)
-            : (total === bestTotal && total > 0);
-        
-        let statusText = "";
-        let isWinning = false;
+      const total = meta[idx].total;
 
-        if (isThirteen) {
-            if (isLeader) {
-                const diff = nextBestTotal - total;
-                statusText = diff > 0 ? `-${diff}` : "LEADER";
-                isWinning = true;
-            } else {
-                const diff = total - bestTotal;
-                statusText = `+${diff}`;
-            }
+      // For Thirteen, require first row completion. For Flip 7, require > 0 total (existing logic).
+      const isLeader = isThirteen
+        ? (firstRowComplete && total === bestTotal)
+        : (total === bestTotal && total > 0);
+
+      let statusText = "";
+      let isWinning = false;
+
+      if (isThirteen) {
+        if (isLeader) {
+          const diff = nextBestTotal - total;
+          statusText = diff > 0 ? `-${diff}` : "LEADER";
+          isWinning = true;
         } else {
-            // Flip 7 Logic
-            const rem = (game.targetScore || 200) - total;
-            if (rem <= 0) {
-                statusText = "WINNER!";
-                isWinning = true;
-            } else {
-                statusText = `${rem} LEFT`;
-            }
+          const diff = total - bestTotal;
+          statusText = `+${diff}`;
         }
+      } else {
+        // Flip 7 Logic
+        const rem = (game.targetScore || 200) - total;
+        if (rem <= 0) {
+          statusText = "WINNER!";
+          isWinning = true;
+        } else {
+          statusText = `${rem} LEFT`;
+        }
+      }
 
-        return {
-            ...p,
-            total,
-            played: p.scores.filter(s => s !== null).length,
-            scored: p.scores.filter(s => s !== null && s > 0).length,
-            isLeader,
-            statusText,
-            isWinning
-        };
+      return {
+        ...p,
+        total,
+        played: p.scores.filter(s => s !== null).length,
+        scored: p.scores.filter(s => s !== null && s > 0).length,
+        isLeader,
+        statusText,
+        isWinning
+      };
     });
   }, [game, isThirteen]);
 
@@ -144,16 +144,16 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
   };
 
   const addPlayer = () => {
-    onUpdate({ 
-      ...game, 
-      players: [...game.players, { id: `p${Date.now()}`, name: `P${game.players.length + 1}`, icon: getRandomEmoji(), scores: new Array(game.roundCount).fill(null) }] 
+    onUpdate({
+      ...game,
+      players: [...game.players, { id: `p${Date.now()}`, name: `P${game.players.length + 1}`, icon: getRandomEmoji(), scores: new Array(game.roundCount).fill(null) }]
     });
   };
 
   return (
     <div className="flex flex-col z-10 transition-opacity duration-300">
       {/* Fixed Primary Header */}
-      <header 
+      <header
         className="fixed top-0 left-0 right-0 bg-magical-bg/95 backdrop-blur-xl border-b border-magical-border z-[100] shadow-sm pt-[var(--safe-top)] transition-all duration-300"
         style={{ height: 'var(--nav-height)' }}
       >
@@ -163,7 +163,7 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
               <span className="material-symbols-rounded text-2xl">arrow_back_ios_new</span>
             </button>
           </div>
-          
+
           {/* Logo Area */}
           <div className="absolute left-1/2 top-0 transform -translate-x-1/2 z-[101] mt-[6px] pointer-events-none">
             <img src={isThirteen ? THIRTEEN_LOGO_SMALL : LOGO_URL} alt="Flip 7" className="w-auto object-contain drop-shadow-2xl" style={{ maxHeight: '55px' }} />
@@ -171,113 +171,110 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
 
           {/* Controls */}
           <div className="flex items-center gap-2 min-w-[3rem] justify-end z-10">
-            <button 
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform" 
-                onClick={addPlayer}
-                style={isThirteen ? { color: 'var(--icon-add)' } : {}}
+            <button
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-magical-surface text-magical-accent border border-magical-border shadow-sm active:scale-90 transition-transform"
+              onClick={addPlayer}
+              style={isThirteen ? { color: 'var(--icon-add)' } : {}}
             >
-               <span className="material-symbols-rounded text-xl">person_add</span>
+              <span className="material-symbols-rounded text-xl">person_add</span>
             </button>
-            {!isThirteen && (
-                <button className="w-9 h-9 flex items-center justify-center rounded-full text-magical-muted hover:bg-magical-surface transition-colors" onClick={() => setShowSettings(true)}>
-                  <span className="material-symbols-rounded text-xl">tune</span>
-                </button>
-            )}
-            {/* Spacer for Thirteen to balance logo */}
-            {isThirteen && <div className="w-9 h-9"></div>}
+            <button
+              className="w-9 h-9 flex items-center justify-center rounded-full text-magical-muted hover:bg-magical-surface transition-colors"
+              onClick={() => setShowSettings(true)}
+              style={isThirteen ? { color: 'var(--icon-add)' } : {}}
+            >
+              <span className="material-symbols-rounded text-xl">tune</span>
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 w-full pb-[calc(6rem+var(--safe-bottom))] mt-[var(--nav-height)]">
-        <div 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: `3.5rem repeat(${game.players.length}, minmax(63px, 1fr))`, 
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `3.5rem repeat(${game.players.length}, minmax(63px, 1fr))`,
             gridTemplateRows: 'minmax(var(--header-height), auto)', // Dynamic height for desktop
             gridAutoRows: 'var(--row-height)',
             width: 'fit-content',
-            minWidth: '100%', 
-          } as any} 
+            minWidth: '100%',
+          } as any}
           className={`px-[var(--safe-left)] pr-[var(--safe-right)] no-overscroll`}
         >
           {/* Sticky Corner Cell */}
-          <div 
-                              className="sticky left-0 z-[60] border-b border-r-2 border-magical-border bg-magical-bg flex items-center justify-center"            style={{ top: 'var(--nav-height)' }}
+          <div
+            className="sticky left-0 z-[60] border-b border-r-2 border-magical-border bg-magical-bg flex items-center justify-center" style={{ top: 'var(--nav-height)' }}
           >
             <span className="text-xs font-mono text-magical-muted font-bold">#</span>
           </div>
 
           {/* Player Columns Headers */}
           {playerStats.map(p => {
-             return (
-               <div 
-                  key={p.id} 
-                  className={`sticky z-[50] border-b border-r border-magical-border p-1.5 transition-all duration-300 group player-header-cell ${p.isLeader ? 'is-leader-header-alt' : 'bg-magical-bg'}`}
-                  style={{ top: 'var(--nav-height)' }}
-               >
-                  {/* Delete Button */}
-                  <div className="absolute top-0 right-0 z-[70] p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
-                    <button 
-                      className={`w-8 h-8 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform ${isThirteen ? 'text-[#444441]' : 'text-magical-accent dark:text-white'}`}
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (p.scores.some(s => s !== null)) {
-                          onPromptDelete('player', p.id, p.name); 
-                        } else {
-                          onUpdate({ ...game, players: game.players.filter(pl => pl.id !== p.id) });
-                        }
-                      }}
-                      tabIndex={-1}
-                    >
-                      <span className="material-symbols-rounded text-xl font-bold">close</span>
-                    </button>
-                  </div>
+            return (
+              <div
+                key={p.id}
+                className={`sticky z-[50] border-b border-r border-magical-border p-1.5 transition-all duration-300 group player-header-cell ${p.isLeader ? 'is-leader-header-alt' : 'bg-magical-bg'}`}
+                style={{ top: 'var(--nav-height)' }}
+              >
+                {/* Delete Button */}
+                <div className="absolute top-0 right-0 z-[70] p-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+                  <button
+                    className={`w-8 h-8 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform ${isThirteen ? 'text-[#444441]' : 'text-magical-accent dark:text-white'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (p.scores.some(s => s !== null)) {
+                        onPromptDelete('player', p.id, p.name);
+                      } else {
+                        onUpdate({ ...game, players: game.players.filter(pl => pl.id !== p.id) });
+                      }
+                    }}
+                    tabIndex={-1}
+                  >
+                    <span className="material-symbols-rounded text-xl font-bold">close</span>
+                  </button>
+                </div>
 
-                  <div className="flex flex-col justify-between h-full py-0.5 relative overflow-hidden">
-                    {p.isLeader && !isThirteen && <div className="absolute -top-6 -right-6 w-12 h-12 bg-yellow-400/20 rounded-full blur-lg animate-pulse"></div>}
-                    <div className="flex flex-col items-start gap-0 cursor-pointer z-10 pl-1" onClick={() => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, icon: getRandomEmoji() } : pl) })}>
-                      <div className="text-xl sm:text-2xl emoji-font leading-none group-hover:scale-110 transition-transform origin-left drop-shadow-sm mb-0.5">{p.icon}</div>
-                      <input 
-                        className={`bg-transparent w-full min-w-0 font-bold outline-none p-0 text-left truncate tracking-tight transition-colors ${isCrowded ? 'text-xs' : 'text-sm'} ${
-                            isThirteen 
-                                ? (p.isLeader ? 'text-white' : 'text-[#444441]') 
-                                : (p.isLeader ? 'text-magical-text' : 'text-magical-muted focus:text-magical-text')
-                        }`} 
-                        value={p.name} 
-                        onChange={(e) => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, name: e.target.value } : pl) })} 
-                        onFocus={(e) => e.target.select()} 
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <div className="text-center z-10 mt-0.5">
-                      <div className={`font-bold tracking-tighter leading-none ${isCrowded ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-3xl'} ${
-                          isThirteen 
-                            ? (p.isLeader ? 'text-white' : 'text-[#444441]')
-                            : (p.isLeader ? 'text-magical-accent' : 'text-magical-text')
+                <div className="flex flex-col justify-between h-full py-0.5 relative overflow-hidden">
+                  {p.isLeader && !isThirteen && <div className="absolute -top-6 -right-6 w-12 h-12 bg-yellow-400/20 rounded-full blur-lg animate-pulse"></div>}
+                  <div className="flex flex-col items-start gap-0 cursor-pointer z-10 pl-1" onClick={() => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, icon: getRandomEmoji() } : pl) })}>
+                    <div className="text-xl sm:text-2xl emoji-font leading-none group-hover:scale-110 transition-transform origin-left drop-shadow-sm mb-0.5">{p.icon}</div>
+                    <input
+                      className={`bg-transparent w-full min-w-0 font-bold outline-none p-0 text-left truncate tracking-tight transition-colors ${isCrowded ? 'text-xs' : 'text-sm'} ${isThirteen
+                        ? (p.isLeader ? 'text-white' : 'text-[#444441]')
+                        : (p.isLeader ? 'text-magical-text' : 'text-magical-muted focus:text-magical-text')
+                        }`}
+                      value={p.name}
+                      onChange={(e) => onUpdate({ ...game, players: game.players.map(pl => pl.id === p.id ? { ...pl, name: e.target.value } : pl) })}
+                      onFocus={(e) => e.target.select()}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="text-center z-10 mt-0.5">
+                    <div className={`font-bold tracking-tighter leading-none ${isCrowded ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-3xl'} ${isThirteen
+                      ? (p.isLeader ? 'text-white' : 'text-[#444441]')
+                      : (p.isLeader ? 'text-magical-accent' : 'text-magical-text')
                       }`}>{p.total}</div>
-                    </div>
-                    <div className="text-center z-10 px-0.5 w-full header-footer-container">
-                      <div className={`text-[0.65rem] md:text-xs font-bold font-mono tracking-tight uppercase ${
-                          isThirteen
-                            ? (p.isLeader ? 'text-white' : 'text-[#712b3f]')
-                            : (p.isWinning ? 'text-magical-text animate-pulse' : 'text-magical-muted')
+                  </div>
+                  <div className="text-center z-10 px-0.5 w-full header-footer-container">
+                    <div className={`text-[0.65rem] md:text-xs font-bold font-mono tracking-tight uppercase ${isThirteen
+                      ? (p.isLeader ? 'text-white' : 'text-[#712b3f]')
+                      : (p.isWinning ? 'text-magical-text animate-pulse' : 'text-magical-muted')
                       } flex justify-center w-full gap-x-1 whitespace-nowrap overflow-hidden`}>
-                         <span>{p.statusText}</span>
-                         {/* Show stats only for Flip 7 */}
-                         {!isThirteen && !p.isWinning && <span className="extra-info opacity-60">| {p.scored}/{p.played}</span>}
-                      </div>
+                      <span>{p.statusText}</span>
+                      {/* Show stats only for Flip 7 */}
+                      {!isThirteen && !p.isWinning && <span className="extra-info opacity-60">| {p.scored}/{p.played}</span>}
                     </div>
                   </div>
-               </div>
-             );
+                </div>
+              </div>
+            );
           })}
 
           {/* Grid Scores */}
           {Array.from({ length: game.roundCount }).map((_, r) => (
             <React.Fragment key={r}>
-              <div 
+              <div
                 className={`sticky left-0 z-[40] border-r-2 border-b border-magical-border bg-magical-bg flex items-center justify-center font-bold font-mono transition-colors duration-300
                     ${isCrowded ? 'text-[0.65rem]' : 'text-xs'}
                     ${activeRow === r ? (isThirteen ? 'text-magical-muted' : 'text-magical-accent') : 'text-magical-muted'}
@@ -290,15 +287,15 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
                 const isFocused = focusedCell?.pId === p.id && focusedCell?.r === r;
                 return (
                   <div key={`${p.id}-${r}`} className={`border-r border-b border-magical-border h-[var(--row-height)] transition-all ${isFocused ? (isThirteen ? 'bg-magical-surface/80 ring-2 ring-inset ring-[color:var(--highlight-winner)] z-[30]' : 'bg-magical-surface/80 ring-2 ring-inset ring-magical-accent z-[30]') : ''} ${activeRow === r && !isFocused ? 'bg-magical-surface/40' : 'bg-transparent'} ${isThirteen && p.scores[r] === 0 ? 'bg-[#e3d6b2]' : ''}`}>
-                    <input 
-                      type="number" 
-                      inputMode="numeric" 
-                      className={`w-full h-full bg-transparent text-center font-mono font-bold outline-none border-none focus:ring-0 transition-opacity ${isCrowded ? 'text-base' : 'text-lg'} ${!isThirteen && p.scores[r] === 0 ? 'opacity-30' : ''}`} 
-                      value={p.scores[r] ?? ''} 
-                      placeholder="-" 
-                      onFocus={() => { setActiveRow(r); setFocusedCell({ pId: p.id, r }); }} 
-                      onBlur={() => onCellBlur(r)} 
-                      onChange={(e) => handleScoreInput(p.id, r, e.target.value)} 
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      className={`w-full h-full bg-transparent text-center font-mono font-bold outline-none border-none focus:ring-0 transition-opacity ${isCrowded ? 'text-base' : 'text-lg'} ${!isThirteen && p.scores[r] === 0 ? 'opacity-30' : ''}`}
+                      value={p.scores[r] ?? ''}
+                      placeholder="-"
+                      onFocus={() => { setActiveRow(r); setFocusedCell({ pId: p.id, r }); }}
+                      onBlur={() => onCellBlur(r)}
+                      onChange={(e) => handleScoreInput(p.id, r, e.target.value)}
                     />
                   </div>
                 );
@@ -308,16 +305,17 @@ const GameView: React.FC<GameViewProps> = ({ game, onGoBack, onUpdate, onPromptD
           <div style={{ gridColumn: '1 / -1', height: '12rem' }}></div>
         </div>
       </main>
-      
+
       {showSettings && (
-        <SettingsModal 
-          targetScore={game.targetScore || 200} 
-          reorderEnabled={game.reorderEnabled ?? true} 
-          onSave={(targetScore, reorderEnabled) => { 
-            onUpdate({ ...game, targetScore: isThirteen ? null : targetScore, reorderEnabled, players: reorderEnabled ? sortPlayersByLeader(game.players) : game.players }); 
-            setShowSettings(false); 
-          }} 
-          onClose={() => setShowSettings(false)} 
+        <SettingsModal
+          gameType={game.type}
+          targetScore={game.targetScore || 200}
+          reorderEnabled={game.reorderEnabled ?? true}
+          onSave={(targetScore, reorderEnabled) => {
+            onUpdate({ ...game, targetScore: isThirteen ? null : targetScore, reorderEnabled, players: reorderEnabled ? sortPlayersByLeader(game.players) : game.players });
+            setShowSettings(false);
+          }}
+          onClose={() => setShowSettings(false)}
         />
       )}
 
