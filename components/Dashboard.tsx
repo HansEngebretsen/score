@@ -34,52 +34,51 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isThirteen = activeGameType === 'thirteen';
   const isLowScoreWins = isThirteen;
 
-  // Calculate Leaderboard
-  const leaderboard = useMemo(() => {
-    const stats: Record<string, { wins: number; totalScore: number; gamesPlayed: number; icon: string; name: string }> = {};
-
-    games.forEach(game => {
-      if (game.roundCount === 0) return; // Skip empty games
-
-      // Find winner
-      let winnerId: string | null = null;
-      let bestScore = isLowScoreWins ? Infinity : -Infinity;
-
-      game.players.forEach(p => {
-        const total = p.scores.reduce((a, b) => a + (b || 0), 0);
-        if (isLowScoreWins ? total < bestScore : total > bestScore) {
-          bestScore = total;
-          winnerId = p.id;
-        }
-      });
-
-      // Update stats
-      game.players.forEach(p => {
-        if (!stats[p.id]) {
-          stats[p.id] = { wins: 0, totalScore: 0, gamesPlayed: 0, icon: p.icon, name: p.name };
-        }
-        stats[p.id].totalScore += p.scores.reduce((a, b) => a + (b || 0), 0);
-        stats[p.id].gamesPlayed += 1;
-        if (p.id === winnerId) {
-          stats[p.id].wins += 1;
-        }
-      });
-    });
-
-    return Object.entries(stats)
-      .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => metric === 'wins' ? b.wins - a.wins : b.totalScore - a.totalScore)
-      .slice(0, 5);
-  }, [games, metric, isLowScoreWins]);
-
-  const hasCompletedGame = useMemo(() => {
-    return games.some(g => {
+  const completedGames = useMemo(() => {
+    return games.filter(g => {
       if (g.type === 'thirteen') {
         return g.players.some(p => p.scores.filter(s => s !== null).length === 13);
       }
       return g.players.some(p => p.scores.reduce((a, b) => a + (b || 0), 0) >= (g.targetScore || 200));
     });
   }, [games]);
+
+  const hasCompletedGame = completedGames.length > 0;
+
+  // Calculate Leaderboard
+  const leaderboard = useMemo(() => {
+    // Player ids are regenerated for every game, so aggregate by name instead
+    const stats: Record<string, { wins: number; totalScore: number; gamesPlayed: number; icon: string; name: string }> = {};
+
+    // Only finished games count, otherwise whoever leads an in-progress game gets a win
+    completedGames.forEach(game => {
+      const totals = game.players.map(p => p.scores.reduce<number>((a, b) => a + (b || 0), 0));
+      const bestScore = isLowScoreWins ? Math.min(...totals) : Math.max(...totals);
+
+      game.players.forEach((p, idx) => {
+        const key = p.name.trim().toLowerCase();
+        if (!key) return;
+        // Games are ordered newest first, so the first entry carries the latest name/icon
+        if (!stats[key]) {
+          stats[key] = { wins: 0, totalScore: 0, gamesPlayed: 0, icon: p.icon, name: p.name.trim() };
+        }
+        stats[key].totalScore += totals[idx];
+        stats[key].gamesPlayed += 1;
+        // Ties share the win
+        if (totals[idx] === bestScore) {
+          stats[key].wins += 1;
+        }
+      });
+    });
+
+    return Object.entries(stats)
+      .map(([id, data]) => ({ id, ...data }))
+      .sort((a, b) => {
+        if (metric === 'wins') return b.wins - a.wins || b.gamesPlayed - a.gamesPlayed || a.name.localeCompare(b.name);
+        return b.totalScore - a.totalScore || a.name.localeCompare(b.name);
+      })
+      .slice(0, 5);
+  }, [completedGames, metric, isLowScoreWins]);
 
   const maxVal = useMemo(() => {
     if (leaderboard.length === 0) return 1;
@@ -158,7 +157,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ? ['bg-[#a88b51]', 'bg-[#b12b4b]', 'bg-[#712b3f]', 'bg-[#444441]', 'bg-[#a3895a]']
                 : ['bg-pink-400', 'bg-violet-400', 'bg-indigo-400', 'bg-blue-400', 'bg-cyan-400'];
               return (
-                <div key={p.name} className="flex flex-col h-full min-w-[44px] flex-1 group">
+                <div key={p.id} className="flex flex-col h-full min-w-[44px] flex-1 group">
                   <div className="flex-1 w-full flex flex-col justify-end items-center">
                     <div className="text-[10px] font-bold text-magical-accent mb-1 opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">{val}</div>
                     <div
