@@ -1,33 +1,56 @@
+# `score`
 
-# ✨ Flip 7 Tracker
+A scorekeeper for game night, built for your phone. Flip 7 and Thirteen, with running totals, a leaderboard and every past game saved.
 
-A whimsical and magical score keeper designed specifically for the **Flip 7** card game. This application provides a high-fidelity digital scoreboard that tracks your progress, celebrates your wins, and ensures your game nights are as enchanting as the game itself.
 
-## 🌟 Key Features
+<div align="center">
+  
+[<kbd><br>haaans.com/score<br><br></kbd>](https://haaans.com/score/)
 
-*   **Magical Aesthetics**: A beautiful, responsive UI featuring dynamic **Light & Dark modes** with whimsical gradients, smooth transitions, and a glassmorphism design language.
-*   **Persistent Scoreboard**: Never lose track of your progress. All game data and history are automatically saved to your browser's **Local Storage**.
-*   **Smart Reordering**: Keep the excitement alive with optional **Auto-Reordering**. Columns intelligently shift to place the current leader at the front once a round is fully completed.
-*   **Player Inheritance**: Start new games instantly. The app remembers your player count, names, and custom emojis from your previous match so you can jump right back in.
-*   **High-Precision Scoring**: A dedicated grid designed for mobile-first input. Features include:
-    *   Row highlighting for focused entry.
-    *   Individual cell "active rings" to prevent entry errors.
-    *   Zero-score dimming to clearly distinguish "busted" rounds.
-*   **Global Leaderboard**: Track your group's legacy with a leaderboard that sorts players by **Total Wins** or **Cumulative Score**.
-*   **Game History**: Browse through all your past matches with visual progress bars and winner indicators.
-*   **Mid-Game Customization**: Add new players on the fly or adjust the target score (e.g., from 200 to 500) whenever the rules of the house change.
-*   **GitHub Pages Ready**: Optimized for static hosting, allowing you to deploy your own personal scorekeeper in seconds.
+</div>
 
-## 🚀 Getting Started
 
-1.  **Open the App**: Simply load the site in any modern web browser.
-2.  **Add Players**: Customize names and emojis to match your group.
-3.  **Enter Scores**: Tap any cell to enter a round score. The app will automatically calculate totals and project the remaining points needed to win.
-4.  **Finish & Repeat**: When a player hits the target score, they are crowned the winner! Click "New Game" to start a fresh match with the same group.
+<p align="center">
+<img src="demos/hero.png" alt="app" width="500">
+</p>
 
-## 🛠 Built With
+## Features
 
-*   **React 19**: Modern component architecture.
-*   **Tailwind CSS**: Utility-first styling with custom theme configurations.
-*   **Vite**: Lightning-fast build and development tooling.
-*   **Material Symbols**: Rounded iconography for a playful, modern feel.
+<table>
+<tr valign="top">
+<td width="50%">
+<h3>Score a round of Flip 7</h3>
+<p>Tap a cell and type. Totals and points left to 200 update as you go, and when the round's done the leader moves to the front.</p>
+</td>
+<td width="50%">
+<img src="demos/flip.gif" alt="Score a round of Flip 7">
+</td>
+</tr>
+<tr valign="top">
+<td width="50%">
+<img src="demos/thirteen.gif" alt="Play Thirteen, low score wins">
+</td>
+<td width="50%">
+<h3>Play Thirteen, low score wins</h3>
+<p>Rounds count down from King to Ace, zeros are marked, and the lowest total wears the leader badge.</p>
+</td>
+</tr>
+<tr valign="top">
+<td width="50%">
+<h3>Flip the leaderboard</h3>
+<p>See who has the most wins, or who's scored the most points across every game.</p>
+</td>
+<td width="50%">
+<img src="demos/leaders.gif" alt="Flip the leaderboard">
+</td>
+</tr>
+<tr valign="top">
+<td width="50%">
+<img src="demos/newgame.gif" alt="New game, same crew">
+</td>
+<td width="50%">
+<h3>New game, same crew</h3>
+<p>A new game starts with the same players and emojis, so the next round is one tap away. Everything is saved in your browser.</p>
+</td>
+</tr>
+</table>
