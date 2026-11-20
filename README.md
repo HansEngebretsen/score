@@ -1,6 +1,6 @@
 # `score`
 
-A scorekeeper for game night, built for your phone. Flip 7 and Thirteen, with running totals, a leaderboard and every past game saved.
+Mobile scorekeeper for game nights. Flip 7 and Thirteen, with running totals, a leaderboard and every past game saved.
 
 
 <div align="center">
